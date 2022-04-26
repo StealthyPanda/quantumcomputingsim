@@ -1,5 +1,5 @@
 # a qbit is [a, b] where a and b are complex numbers
-from math import atan, pi
+from math import atan, pi, log
 from random import random
 
 class comp(object):
@@ -91,7 +91,7 @@ def NOT(qbit: list) -> list:
     return qbit[::-1]
 
 def IDEN(qbit : list) -> list:
-    return qbit[::]
+    return qbit
 
 def HAD(qbit : list) -> list:
     # print(qbit)
@@ -143,3 +143,65 @@ def CNOT(qcontrol : list, qtarget : list) ->list:
     tens = tensor(qcontrol, qtarget)
     result = CNOTGATE() ** tens
     return result
+
+
+def run(shots : list, state : int) -> None:
+    res = [0 for i in range(len(state))]
+    for each in range(shots):
+        measurement = MEASURE(state)
+        res[measurement.index(1)] += 1
+    ret = ""
+    for each in range(len(res)):
+        ret += (f"|Ψ{bin(each)[2:]}> : {float(res[each]/shots) * 100}%, ")
+    ret = ret[:-2]
+    print(ret)
+
+def extract(measurement : list, qbitindex : int) -> list:
+    nqbits = int(log(len(measurement), 2))
+    index = bin(measurement.index(1))[2:]
+    index = ('0' * (nqbits - len(index))) + index
+    index = index[qbitindex]
+    return int(index)
+
+
+#gates are given in order of the qubits
+#so
+# q0 --[H]---[X]---...
+# q1 --[X]--[H]---...
+# CNOT is defined by setting one qubit as qc (control) and qt (target) gates
+# def compilecircuit(gates):
+#     qbits = [qbit(0) for i in range(len(gates))]
+#     qstates = [0 for i in range(len(qbits))]
+#     index = 0
+#     while True:
+#         for each in range(len(qbits)):
+#             gate = ''
+#             if 
+
+class qprogram(object):
+    def __init__(self, nqbits : int):
+        self.nqbits = nqbits
+        self.qbits = [qbit(0) for i in range(nqbits)]
+        self.meta = [qbit(0) for i in range(nqbits)]
+        self.gates = [[] for i in range(nqbits)]
+    
+    def addgates(self, qbitindex : int, gates : list):
+        # for each in gates:
+        #     if each  == 'CNOTC':
+        #         pass
+        #     else:
+        #         self.qbits[qbitindex] = each(self.qbits[qbitindex])
+        self.gates[qbitindex] += gates
+
+    def measure(self):
+        for each in range(len(self.gates[0])):
+            for i in range(self.nqbits):
+                if self.gates[i][each] == CNOT:
+                    pass
+                else:
+                    self.qbits[i] = self.gates[i][each](self.qbits[i])
+        state = self.qbits[0]
+        for each in range(1, len(self.qbits)):
+            state = tensor(state, self.qbits[each])
+        measurement = MEASURE(state)
+        return measurement
