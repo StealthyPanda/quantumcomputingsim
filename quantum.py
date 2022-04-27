@@ -1,6 +1,7 @@
 # a qbit is [a, b] where a and b are complex numbers
 from math import atan, pi, log
 from random import random
+from typing import Type
 
 class comp(object):
     def __init__(self, a : float, b: float):
@@ -144,6 +145,8 @@ def CNOT(qcontrol : list, qtarget : list) ->list:
     result = CNOTGATE() ** tens
     return result
 
+def CNGATE(qc : list) -> Type[lambda x: [x]]:
+    return lambda x: CNOT(qc, x)
 
 def run(shots : list, state : int) -> None:
     res = [0 for i in range(len(state))]
@@ -182,26 +185,58 @@ class qprogram(object):
     def __init__(self, nqbits : int):
         self.nqbits = nqbits
         self.qbits = [qbit(0) for i in range(nqbits)]
-        self.meta = [qbit(0) for i in range(nqbits)]
+        self.meta = []
         self.gates = [[] for i in range(nqbits)]
     
     def addgates(self, qbitindex : int, gates : list):
-        # for each in gates:
-        #     if each  == 'CNOTC':
-        #         pass
-        #     else:
-        #         self.qbits[qbitindex] = each(self.qbits[qbitindex])
         self.gates[qbitindex] += gates
 
-    def measure(self):
-        for each in range(len(self.gates[0])):
-            for i in range(self.nqbits):
-                if self.gates[i][each] == CNOT:
-                    pass
-                else:
-                    self.qbits[i] = self.gates[i][each](self.qbits[i])
-        state = self.qbits[0]
-        for each in range(1, len(self.qbits)):
-            state = tensor(state, self.qbits[each])
-        measurement = MEASURE(state)
-        return measurement
+    def CNGATE(self, qc: int) -> Type[lambda x : [x]]:
+        return lambda x: CNOT(self.qbits)
+    # def measure(self, qbitindex : int) -> list:
+    #     for each in range(len(self.gates[0])):
+    #         for i in range(self.nqbits):
+    #             if self.gates[i][each] == CNOT:
+    #                 pass
+    #             else:
+    #                 self.qbits[i] = self.gates[i][each](self.qbits[i])
+        # state = MEASURE(self.qbits[0])
+        # for each in range(1, len(self.qbits)):
+        #     state = tensor(state, MEASURE(self.qbits[each]))
+        # measurement = MEASURE(state)
+        # state = MEASURE(self.qbits[qbitindex])
+        # return state
+    
+    # def measure(self, qbitindex : int) -> list:
+    #     m = 
+
+    def getstate(self, qbitindex : int) -> list:
+        gates = self.gates[qbitindex]
+        m = self.qbits[qbitindex]
+        for each in gates:
+            m = each(m)
+        #m = MEASURE(m)
+        return m
+    
+    def getstatetensor(self) -> list:
+        gates = self.gates
+        state = ""
+        for each in range(self.nqbits):
+            m = self.qbits[each]
+            for i in range(len(self.gates[each])):
+                m = self.gates[each][i](m)
+            if each != 0:
+                state = tensor(state, m)
+            else:
+                state = m
+        #m = MEASURE(m)
+        return state
+
+    def compile(self):
+        largestline = 0
+        for each in range(self.nqbits):
+            if largestline < len(self.gates[each]): largestline = len(self.gates[each])
+        
+        for each in range(self.nqbits):
+            self.gates[each] += [IDEN for i in range(largestline - len(self.gates[each]))]
+            print(self.gates[each])
