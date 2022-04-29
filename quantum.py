@@ -184,6 +184,18 @@ def extract(measurement : list, qbitindex : int) -> list:
 #             gate = ''
 #             if 
 
+def getgaterepr(gate : Type[lambda x: [x]]) -> str:
+    # if gate.__code__.co_code == IDEN.__code__.co_code: return '[I]'
+    # if gate.__code__.co_code == HAD.__code__.co_code: return '[H]'
+    # if gate.__code__.co_code == NOT.__code__.co_code: return '[X]'
+    # if gate.__code__.co_code == CNOT.__code__.co_code: return '[?X]'
+    if gate == IDEN: return '[I]'
+    if gate == HAD: return '[H]'
+    if gate == NOT: return '[X]'
+    if gate == CNOT: return '[?X]'
+    return "[!]"
+
+
 class qprogram(object):
     def __init__(self, nqbits : int):
         self.nqbits = nqbits
@@ -194,9 +206,9 @@ class qprogram(object):
     def __repr__(self):
         string = "\n"
         for each in range(self.nqbits):
-            line = f"q{str(each)} -> ---"
+            line = f"q{str(each)} ({self.qbits[each][1]}) ⮕  ---"
             for i in range(len(self.gates[each])):
-                line += getgaterepr(self.gates[i])
+                line += getgaterepr(self.gates[each][i])
                 line += "---"
             string += line + '\n'
         return string
