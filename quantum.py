@@ -148,14 +148,17 @@ def CNOT(qcontrol : list, qtarget : list) ->list:
 def CNGATE(qc : list) -> Type[lambda x: [x]]:
     return lambda x: CNOT(qc, x)
 
-def run(shots : list, state : int) -> None:
+def run(shots : int, state : list) -> None:
+    sl = int(log(len(state), 2))
     res = [0 for i in range(len(state))]
     for each in range(shots):
         measurement = MEASURE(state)
         res[measurement.index(1)] += 1
     ret = ""
     for each in range(len(res)):
-        ret += (f"|Ψ{bin(each)[2:]}> : {float(res[each]/shots) * 100}%, ")
+        s = str(bin(each))[2:]
+        s = ('0' * (sl - len(s))) + s
+        ret += (f"|Ψ{s}> : {float(res[each]/shots) * 100}%, ")
     ret = ret[:-2]
     print(ret)
 
@@ -163,8 +166,8 @@ def extract(measurement : list, qbitindex : int) -> list:
     nqbits = int(log(len(measurement), 2))
     index = bin(measurement.index(1))[2:]
     index = ('0' * (nqbits - len(index))) + index
-    index = index[qbitindex]
-    return int(index)
+    index = int(index[qbitindex])
+    return ([0, 1] if index else [1, 0])
 
 
 #gates are given in order of the qubits
@@ -188,34 +191,27 @@ class qprogram(object):
         self.meta = []
         self.gates = [[] for i in range(nqbits)]
     
+    def __repr__(self):
+        string = "\n"
+        for each in range(self.nqbits):
+            line = f"q{str(each)} -> ---"
+            for i in range(len(self.gates[each])):
+                line += getgaterepr(self.gates[i])
+                line += "---"
+            string += line + '\n'
+        return string
+    
     def addgates(self, qbitindex : int, gates : list):
         self.gates[qbitindex] += gates
 
-    def CNGATE(self, qc: int) -> Type[lambda x : [x]]:
-        return lambda x: CNOT(self.qbits)
-    # def measure(self, qbitindex : int) -> list:
-    #     for each in range(len(self.gates[0])):
-    #         for i in range(self.nqbits):
-    #             if self.gates[i][each] == CNOT:
-    #                 pass
-    #             else:
-    #                 self.qbits[i] = self.gates[i][each](self.qbits[i])
-        # state = MEASURE(self.qbits[0])
-        # for each in range(1, len(self.qbits)):
-        #     state = tensor(state, MEASURE(self.qbits[each]))
-        # measurement = MEASURE(state)
-        # state = MEASURE(self.qbits[qbitindex])
-        # return state
-    
-    # def measure(self, qbitindex : int) -> list:
-    #     m = 
+    def CNOTT(self, qc: int) -> Type[lambda x : [x]]:
+        return lambda x: CNOT(self.qbits[qc], x)
 
     def getstate(self, qbitindex : int) -> list:
         gates = self.gates[qbitindex]
         m = self.qbits[qbitindex]
         for each in gates:
             m = each(m)
-        #m = MEASURE(m)
         return m
     
     def getstatetensor(self) -> list:
@@ -229,7 +225,6 @@ class qprogram(object):
                 state = tensor(state, m)
             else:
                 state = m
-        #m = MEASURE(m)
         return state
 
     def compile(self):
