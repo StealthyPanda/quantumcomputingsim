@@ -1,7 +1,10 @@
 # a qbit is [a, b] where a and b are complex numbers
-from math import atan, pi, log
+from math import atan, pi, log, cos,sin
 from random import random
 from typing import Type
+
+PI = pi
+pi = pi
 
 class comp(object):
     def __init__(self, a : float, b: float):
@@ -12,6 +15,10 @@ class comp(object):
             self.theta = atan((b/a))
         except ZeroDivisionError:
             self.theta = pi/2 * (1 if self.b >= 0 else -1)
+
+    def polar(r : float, theta : float):
+        return comp(r * cos(theta), r * sin(theta))
+
 
     def __eq__(self, o: object) -> bool:
         return ((self.a == o.a) and (self.b == o.b))
@@ -27,6 +34,10 @@ class comp(object):
         for each in range(p):
             power = power * self
         return power
+    
+    def getcomplex(number : any):
+        if type(number) == type(comp(1, 0)): return number
+        return comp(number, 0)
 
     def __mul__(self, other):
         return comp((self.a * other.a) - (self.b * other.b), (self.a * other.b) + (self.b * other.a))
@@ -115,6 +126,21 @@ def HAD(qbit : list) -> list:
     # print(qbit)
     return HGATE(int(log(len(qbit), 2))) ** qbit
 
+def FLIP(state: list) -> list:
+    flipped = []
+    for each in state:
+        each = comp.getcomplex(each)
+        each.b *= -1
+        flipped.append(each)
+    return flipped
+
+def SHIFT(state : list, phase : float) -> list:
+    shifted = []
+    rotor = comp.polar(1, phase)
+    for each in state:
+        shifted.append(comp.getcomplex(each) * rotor)
+    return shifted
+
 def mtensor(m1 : Matrix, m2 : Matrix) -> Matrix:
     r = m1.nrows * m2.nrows
     c = m1.ncols * m2.ncols
@@ -149,6 +175,24 @@ def MEASURE(tensor: list) -> list:
             return res
     return res
 
+def printreal(matrix : Matrix) -> None:
+    thing = ""
+    for each in matrix.rows:
+        line = ""
+        for i in each: line +=(str(i.a) + ' ')
+        line += '\n'
+        thing += line
+    print(thing)
+
+def printimg(matrix : Matrix) -> None:
+    thing = ""
+    for each in matrix.rows:
+        line = ""
+        for i in each: line +=(str(i.b) + ' ')
+        line += '\n'
+        thing += line
+    print(thing)
+
 def tensor(q1 : list, q2 : list) -> list:
     tensorproduct = []
     for each in q1:
@@ -159,16 +203,28 @@ def tensor(q1 : list, q2 : list) -> list:
                 tensorproduct.append(every * each)
     return tensorproduct
 
-def CNOTGATE() -> Matrix:
+def CNOTGATEOLD(controlindex : int = 0, targetindex : int = 1) -> Matrix:
     cg = Matrix(4, 4)
     cg = cg * 0
     for each in range(4):
         for i in range(4):
             if each == i: cg.rows[each][i] = comp(1, 0)
-    buffer = cg.rows[-1]
-    cg.rows[-1] = cg.rows[-2]
-    cg.rows[-2] = buffer
+    if controlindex == 0 and targetindex == 1:
+        buffer = cg.rows[-1]
+        cg.rows[-1] = cg.rows[-2]
+        cg.rows[-2] = buffer
+    elif controlindex == 1 and targetindex == 0:
+        buffer = cg.rows[-1]
+        cg.rows[-1] = cg.rows[1]
+        cg.rows[1] = buffer
     return cg
+
+def CNOTGATE(nqbits : int = 2, controlindex : int = 0, targetindex : int = 1) -> list:
+    if controlindex == targetindex: raise BaseException("control and target cannot be the same")
+    if nqbits <= 1: raise BaseException("nqbits cannot be less than 2")
+    if nqbits == 2: return CNOTGATEOLD()
+    return mtensor(CNOTGATEOLD(controlindex = controlindex, targetindex = targetindex), CNOTGATE(nqbits - 1, controlindex= controlindex, targetindex=targetindex))
+
 
 def CNOT(qcontrol : list, qtarget : list) ->list:
     tens = tensor(qcontrol, qtarget)
