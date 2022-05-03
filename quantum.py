@@ -50,7 +50,7 @@ class Matrix(object):
     #         for col in range(prod.ncols):
     #             prod.rows[row][col] = 
 
-    def __pow__(self, vector):
+    def __pow__(self, vector : list):
         prod = []
         for each in range(self.nrows):
             dot = comp(0, 0)
@@ -59,11 +59,11 @@ class Matrix(object):
             prod.append(dot)
         return prod
 
-    def __mul__(self, scalar):
+    def __mul__(self, scalar : float):
         prod = Matrix(self.nrows, self.ncols)
         for each in range(self.nrows):
             for i in range(self.ncols):
-                prod.rows[each][i]  = prod.rows[each][i] * scalar
+                prod.rows[each][i]  = self.rows[each][i] * scalar
         return prod
     
     def __repr__(self) -> str:
@@ -81,12 +81,26 @@ def mod(x, squared = False):
 def qbit(bit : int) -> list:
     return [0, 1] if bit else [1, 0]
 
-def HGATE() -> Matrix:
-    HADAMARDGATE = Matrix(2, 2)
-    HADAMARDGATE = HADAMARDGATE * (1/pow(2, 0.5))
-    HADAMARDGATE.rows[-1][-1] =  HADAMARDGATE.rows[-1][-1] * -1
-    return HADAMARDGATE
+# def HGATE() -> Matrix:
+#     HADAMARDGATE = Matrix(2, 2)
+#     HADAMARDGATE = HADAMARDGATE * (1/pow(2, 0.5))
+#     HADAMARDGATE.rows[-1][-1] =  HADAMARDGATE.rows[-1][-1] * -1
+#     return HADAMARDGATE
 
+def HGATE(m : int) -> Matrix:
+    if m == 0: return 1
+    inner = HGATE(m-1)
+    matrix = Matrix(int(pow(2, m)), int(pow(2, m)))
+    if m == 1:
+        matrix = matrix * (1/pow(2, 0.5))
+        matrix.rows[-1][-1] =  matrix.rows[-1][-1] * -1
+        return matrix
+    for each in range(int(pow(2, m))):
+        for i in range(int(pow(2, m))):
+            matrix.rows[each][i] = inner.rows[each % int(pow(2, m-1))][i % int(pow(2, m-1))]
+            if (pow(2, m-1) <= each) and (pow(2, m-1) <= i): matrix.rows[each][i] *= -1
+    matrix = matrix * (1/pow(2, 0.5))
+    return matrix
 
 def NOT(qbit: list) -> list:
     return qbit[::-1]
@@ -96,7 +110,7 @@ def IDEN(qbit : list) -> list:
 
 def HAD(qbit : list) -> list:
     # print(qbit)
-    return HGATE() ** qbit
+    return HGATE(int(log(len(qbit), 2))) ** qbit
 
 # def MEASURE(qbit : list) -> list:
 #     if type(qbit[0]) == type(comp(0, 0)):
