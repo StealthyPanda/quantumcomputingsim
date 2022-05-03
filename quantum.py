@@ -12,6 +12,9 @@ class comp(object):
             self.theta = atan((b/a))
         except ZeroDivisionError:
             self.theta = pi/2 * (1 if self.b >= 0 else -1)
+
+    def __eq__(self, o: object) -> bool:
+        return ((self.a == o.a) and (self.b == o.b))
     
     def __repr__(self) -> str:
         return ("%.2f %s i%.2f" % (self.a, "+" if self.b >= 0 else "-", self.b if self.b >= 0 else (-1 * self.b)))
@@ -42,7 +45,7 @@ class Matrix(object):
         self.nrows = r
         self.ncols = c
 
-        self.rows = [[comp(1, 0) for i in range(self.nrows)] for x in range(self.ncols)]
+        self.rows = [[comp(1, 0) for i in range(self.ncols)] for x in range(self.nrows)]
     #!todo:
     # def __mul__(self, other : Matrix):
     #     prod = Matrix(self.nrows, other.ncols)
@@ -111,6 +114,19 @@ def IDEN(qbit : list) -> list:
 def HAD(qbit : list) -> list:
     # print(qbit)
     return HGATE(int(log(len(qbit), 2))) ** qbit
+
+def mtensor(m1 : Matrix, m2 : Matrix) -> Matrix:
+    r = m1.nrows * m2.nrows
+    c = m1.ncols * m2.ncols
+    product = Matrix(r, c)
+
+    for each in range(m1.nrows):
+        for i in range(m1.ncols):
+            for x in range(m2.nrows):
+                for y in range(m2.ncols):
+                    product.rows[(m2.nrows * each) + x][(m2.ncols * i) + y] = m1.rows[each][i] * m2.rows[x][y]
+    return product
+
 
 # def MEASURE(qbit : list) -> list:
 #     if type(qbit[0]) == type(comp(0, 0)):
