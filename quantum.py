@@ -184,6 +184,14 @@ def extract(measurement : list, qbitindex : int) -> list:
 #             gate = ''
 #             if 
 
+CNOTTARGET = 69
+CNOTCONTROL = 420
+
+swapconsts = [CNOTTARGET, CNOTCONTROL]
+swaps = {
+    CNOTCONTROL : 'bruh'
+}
+
 def getgaterepr(gate : Type[lambda x: [x]]) -> str:
     # if gate.__code__.co_code == IDEN.__code__.co_code: return '[I]'
     # if gate.__code__.co_code == HAD.__code__.co_code: return '[H]'
@@ -193,6 +201,7 @@ def getgaterepr(gate : Type[lambda x: [x]]) -> str:
     if gate == HAD: return '[H]'
     if gate == NOT: return '[X]'
     if gate == CNOT: return '[?X]'
+    if gate.__code__.co_code == (lambda x: CNOT(qprogram.qbits[0], x)).__code__.co_code: return '[⦿]'
     return "[!]"
 
 
@@ -218,6 +227,10 @@ class qprogram(object):
 
     def CNOTT(self, qc: int) -> Type[lambda x : [x]]:
         return lambda x: CNOT(self.qbits[qc], x)
+    
+    def get(self, qbitindex: int, index: int) -> list:
+        if index == -1: return self.qbits[qbitindex]
+        return self.gates[qbitindex][index](self.get(qbitindex, index - 1))
 
     def getstate(self, qbitindex : int) -> list:
         gates = self.gates[qbitindex]
@@ -245,5 +258,7 @@ class qprogram(object):
             if largestline < len(self.gates[each]): largestline = len(self.gates[each])
         
         for each in range(self.nqbits):
+            for i in range(len(self.gates[each])):
+                if self.gates[each][i] in swapconsts:
+                    self.gates[each][i] = swaps[self.gates[each][i]]
             self.gates[each] += [IDEN for i in range(largestline - len(self.gates[each]))]
-            print(self.gates[each])

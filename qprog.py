@@ -3,12 +3,14 @@ from quantum import *
 
 test = qprogram(3)
 
-test.addgates(0, [HAD])
+test.addgates(0, [HAD, test.CNOTT(1)])
 test.addgates(1, [HAD, NOT])
 test.addgates(2, [HAD, HAD, NOT])
 
 test.compile()
 print(test)
+# print(HAD(qbit(0)))
+print(test.get(2, 2))
 sys.exit(0)
 
 aq = NOT(HAD(HAD(qbit(0))))
