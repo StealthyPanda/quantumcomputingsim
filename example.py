@@ -1,21 +1,16 @@
 from quantum import *
 
-test = mtensor(IGATE(1), NGATE(1)) ** tensor(qbit(0), qbit(0))
 
-print (tensor(qbit(0), qbit(0)), test)
 
-# state = CNOT(HAD(qbit(0)), qbit(0))
+test = qprogram(3)
+test.addgates(0, [HGATE(), HGATE(),  IGATE()])
+test.addgates(1, [HGATE(), HGATE(), NGATE()])
+test.addgates(2, [IGATE(), CNOTGATE(), NGATE()])
 
-# run(1600, state)
 
-# # state = HAD(state)
+test.compile()
+# test.run(verbose = True)
+test.run()
 
-# one = Matrix(2, 2)
-# one.rows[0][1] = 0
-# one.rows[1][0] = 0
 
-# hadonfirstnothingonsecond = mtensor(one, HGATE(1))
-
-# state = hadonfirstnothingonsecond ** state
-
-# run(1600, state)
+#victory
