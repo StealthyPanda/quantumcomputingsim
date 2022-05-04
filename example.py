@@ -1,11 +1,21 @@
 from quantum import *
 
-# print(comp.getcomplex(comp(1, 0)))
-# print(FLIP(tensor(qbit(0), qbit(1))))
-s = CNOT(SHIFT(HAD(qbit(1)), PI/3), (qbit(0)))
+test = mtensor(IGATE(1), NGATE(1)) ** tensor(qbit(0), qbit(0))
 
-s = SHIFT(s, PI/3)
+print (tensor(qbit(0), qbit(0)), test)
 
-print(s, MEASURE(s))
+# state = CNOT(HAD(qbit(0)), qbit(0))
 
-run(5, s)
+# run(1600, state)
+
+# # state = HAD(state)
+
+# one = Matrix(2, 2)
+# one.rows[0][1] = 0
+# one.rows[1][0] = 0
+
+# hadonfirstnothingonsecond = mtensor(one, HGATE(1))
+
+# state = hadonfirstnothingonsecond ** state
+
+# run(1600, state)

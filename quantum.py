@@ -57,12 +57,6 @@ class Matrix(object):
         self.ncols = c
 
         self.rows = [[comp(1, 0) for i in range(self.ncols)] for x in range(self.nrows)]
-    #!todo:
-    # def __mul__(self, other : Matrix):
-    #     prod = Matrix(self.nrows, other.ncols)
-    #     for row  in range(prod.nrows):
-    #         for col in range(prod.ncols):
-    #             prod.rows[row][col] = 
 
     def __pow__(self, vector : list):
         prod = []
@@ -95,11 +89,7 @@ def mod(x, squared = False):
 def qbit(bit : int) -> list:
     return [0, 1] if bit else [1, 0]
 
-# def HGATE() -> Matrix:
-#     HADAMARDGATE = Matrix(2, 2)
-#     HADAMARDGATE = HADAMARDGATE * (1/pow(2, 0.5))
-#     HADAMARDGATE.rows[-1][-1] =  HADAMARDGATE.rows[-1][-1] * -1
-#     return HADAMARDGATE
+
 
 def HGATE(m : int) -> Matrix:
     if m == 0: return 1
@@ -115,6 +105,25 @@ def HGATE(m : int) -> Matrix:
             if (pow(2, m-1) <= each) and (pow(2, m-1) <= i): matrix.rows[each][i] *= -1
     matrix = matrix * (1/pow(2, 0.5))
     return matrix
+
+def NGATE(n : int) -> Matrix:
+    gate = Matrix(pow(2, n), pow(2, n))
+    gate = gate * 0
+    # buffer = Matrix(pow(2, n), pow(2, n))
+    for each in range(pow(2, n)):
+        for i in range(pow(2, n)):
+            if (each + i) == (pow(2, n) - 1): gate.rows[each][i] = comp(1, 0)
+    return gate
+
+def IGATE(n : int) -> Matrix:
+    gate = Matrix(pow(2, n), pow(2, n))
+    gate = gate * 0
+    for each in range(pow(2, n)):
+        for i in range(pow(2, n)):
+            if each == i:
+                gate.rows[each][i] = comp(1, 0)
+    return gate
+
 
 def NOT(qbit: list) -> list:
     return qbit[::-1]
@@ -134,12 +143,15 @@ def FLIP(state: list) -> list:
         flipped.append(each)
     return flipped
 
-def SHIFT(state : list, phase : float) -> list:
+def SHIFTGATE(state : list, phase : float) -> list:
     shifted = []
     rotor = comp.polar(1, phase)
     for each in state:
         shifted.append(comp.getcomplex(each) * rotor)
     return shifted
+
+def SHIFT(phase : float) -> Type[lambda x: x]:
+    return lambda x: SHIFTGATE(x, phase)
 
 def mtensor(m1 : Matrix, m2 : Matrix) -> Matrix:
     r = m1.nrows * m2.nrows
@@ -150,7 +162,7 @@ def mtensor(m1 : Matrix, m2 : Matrix) -> Matrix:
         for i in range(m1.ncols):
             for x in range(m2.nrows):
                 for y in range(m2.ncols):
-                    product.rows[(m2.nrows * each) + x][(m2.ncols * i) + y] = m1.rows[each][i] * m2.rows[x][y]
+                    product.rows[(m2.nrows * each) + x][(m2.ncols * i) + y] = comp.getcomplex(m1.rows[each][i]) * comp.getcomplex(m2.rows[x][y])
     return product
 
 
@@ -279,14 +291,13 @@ swaps = {
 }
 
 def getgaterepr(gate : Type[lambda x: [x]]) -> str:
-    # if gate.__code__.co_code == IDEN.__code__.co_code: return '[I]'
-    # if gate.__code__.co_code == HAD.__code__.co_code: return '[H]'
-    # if gate.__code__.co_code == NOT.__code__.co_code: return '[X]'
-    # if gate.__code__.co_code == CNOT.__code__.co_code: return '[?X]'
     if gate == IDEN: return '[I]'
     if gate == HAD: return '[H]'
     if gate == NOT: return '[X]'
     if gate == CNOT: return '[?X]'
+    if gate == FLIP: return '[🔃]'
+    if gate == SHIFT(7): return '[💃]'
+    if gate.__code__.co_code == (lambda x: SHIFTGATE(x, pi)).__code__.co_code: return '[💃]'
     if gate.__code__.co_code == (lambda x: CNOT(qprogram.qbits[0], x)).__code__.co_code: return '[⦿]'
     return "[!]"
 
