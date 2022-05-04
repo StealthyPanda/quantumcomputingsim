@@ -2,8 +2,8 @@
 from math import atan, pi, log, cos,sin
 from random import random
 from typing import Type
+import matplotlib.pyplot as plt
 
-from zmq import IDENTITY
 
 PI = pi
 pi = pi
@@ -176,13 +176,6 @@ def mtensor(m1 : Matrix, m2 : Matrix) -> Matrix:
     return product
 
 
-# def MEASURE(qbit : list) -> list:
-#     if type(qbit[0]) == type(comp(0, 0)):
-#         ar = pow(qbit[0].r, 2)
-#     else:
-#         ar = pow(qbit[0], 2)
-#     if random() <= ar: return [1, 0]
-#     return [0, 1]
 
 def MEASURE(tensor: list) -> list:
     prev = 0
@@ -253,10 +246,18 @@ def CNOT(qcontrol : list, qtarget : list) ->list:
     result = CNOTGATE() ** tens
     return result
 
-def CNGATE(qc : list) -> Type[lambda x: [x]]:
-    return lambda x: CNOT(qc, x)
 
-def run(shots : int, state : list) -> None:
+def plotmeasurement(measurement : list, binary = True) -> list:
+    eigenvectors = [('Ψ' + (('0' * (int(log(len(measurement), 2)) - len(str(bin(i))[2:]))) + str(bin(i))[2:])) for i in range(len(measurement))]
+    if not binary : eigenvectors = [('Ψ' + str(i)) for i in range(len(measurement))]
+    plt.ylim(0, 100)
+    plt.bar(eigenvectors, measurement)
+    plt.xlabel("Eigenstates")
+    plt.ylabel("Percentage of outcomes")
+    plt.show()
+
+
+def run(shots : int, state : list, binary : bool = True, graph : bool = False) -> None:
     sl = int(log(len(state), 2))
     res = [0 for i in range(len(state))]
     for each in range(shots):
@@ -266,9 +267,11 @@ def run(shots : int, state : list) -> None:
     for each in range(len(res)):
         s = str(bin(each))[2:]
         s = ('0' * (sl - len(s))) + s
+        s = int(int('0b'+ s, 2)) if not binary else s
         ret += (f"|Ψ{s}> : {float(res[each]/shots) * 100}%, ")
     ret = ret[:-2]
     print(ret)
+    if graph: plotmeasurement([((each/shots) * 100) for each in res], binary = binary)
 
 def extract(measurement : list, qbitindex : int) -> list:
     nqbits = int(log(len(measurement), 2))
@@ -279,146 +282,6 @@ def extract(measurement : list, qbitindex : int) -> list:
 
 
 
-# def getgaterepr(gate : Type[lambda x: [x]]) -> str:
-#     if gate == IDEN: return '[ I ]'
-#     if gate == HAD: return '[ H ]'
-#     if gate == NOT: return '[ X ]'
-#     if gate == CNOT: return '[?X]'
-#     if gate == FLIP: return '[ 🔃 ]'
-#     if gate == SHIFT(7): return '[ 💃 ]'
-#     if gate.__code__.co_code == (lambda x: SHIFTGATE(x, pi)).__code__.co_code: return '[💃]'
-#     if gate.__code__.co_code == (lambda x: CNOT(qprogram.qbits[0], x)).__code__.co_code: return '[⦿]'
-#     return "[ ! ]"
-
-
-# class qprogram(object):
-#     def __init__(self, nqbits : int):
-#         self.nqbits = nqbits
-#         self.qbits = [qbit(0) for i in range(nqbits)]
-#         self.meta = []
-#         self.gates = [[] for i in range(nqbits)]
-    
-#     def __repr__(self):
-#         string = "\n"
-#         for each in range(self.nqbits):
-#             line = f"q{str(each)} ({self.qbits[each][1]}) ⮕  ---"
-#             for i in range(len(self.gates[each])):
-#                 line += getgaterepr(self.gates[each][i])
-#                 line += "---"
-#             string += line + '\n'
-#         return string
-    
-#     def addgates(self, qbitindex : int, gates : list):
-#         self.gates[qbitindex] += gates
-
-#     def CNOTT(self, qc: int) -> Type[lambda x : [x]]:
-#         return lambda x: CNOT(self.qbits[qc], x)
-    
-#     def get(self, qbitindex: int, index: int) -> list:
-#         if index == -1: return self.qbits[qbitindex]
-#         return self.gates[qbitindex][index](self.get(qbitindex, index - 1))
-
-#     def getstate(self, qbitindex : int) -> list:
-#         gates = self.gates[qbitindex]
-#         m = self.qbits[qbitindex]
-#         for each in gates:
-#             m = each(m)
-#         return m
-    
-#     def getstatetensor(self) -> list:
-#         gates = self.gates
-#         state = ""
-#         for each in range(self.nqbits):
-#             m = self.qbits[each]
-#             for i in range(len(self.gates[each])):
-#                 m = self.gates[each][i](m)
-#             if each != 0:
-#                 state = tensor(state, m)
-#             else:
-#                 state = m
-#         return state
-
-#     def compile(self):
-#         largestline = 0
-#         for each in range(self.nqbits):
-#             if largestline < len(self.gates[each]): largestline = len(self.gates[each])
-
-# IDENTITIY = 0
-# HADAMARD = 1
-# NOT = 2
-# CONTROLLEDNOT = 3
-
-
-
-
-# def getgaterepr(gate : any) -> str:
-#     try : return gaterepr[gate]
-#     except: return '[ ! ]'
-
-# class GATE(object):
-#     def __init__(self, gate : Matrix, repr : str) -> any:
-#         self.gate = gate
-#         self.repr = repr
-#     def __repr__(self) -> str:
-#         return self.repr
-
-
-
-# HADAMARD = GATE(HGATE(1), '[ H ]')
-# IDENTITY = GATE(IGATE(1), '[ I ]')
-# QNOT = GATE(NGATE(1), '[ X ]')
-
-
-
-
-
-# class qprogram(object):
-
-#     def __init__(self, nqbits : int, customstarts : list = None) -> any:
-#         self.nqbits = nqbits
-#         self.qbits = []
-#         if not customstarts: self.qbits = [qbit(0) for i in range(nqbits)]
-#         else:
-#             for i in customstarts: self.qbits.append(qbit(i))
-#         self.gates = [[] for i in range(nqbits)]
-#         self.meta = []
-#         self.taken = []
-#         self.states = []
-
-#     def calcrepr(self):
-#         string = "\n"
-#         for each in range(self.nqbits):
-#             line = f"q{str(each)} ({self.qbits[each][1]}) ⮕  ---"
-#             for i in range(len(self.gates[each])):
-#                 line += self.gates[each][i].repr
-#                 line += "---"
-#             string += line + '\n'
-#         self.repr = string
-
-#     def addgates(self, index : int, gates : list) -> None:
-#         self.gates[index] += gates
-    
-#     def __repr__(self) -> str:
-#         return self.repr
-
-#     def compile(self):
-#         self.calcrepr()
-
-#     def getfinalstate(self, qbitindex : int) -> list:
-#         if qbitindex in self.taken : return self.states[self.taken.index(qbitindex)]
-#         gates = self.gates[qbitindex]
-#         q = self.qbits[qbitindex]
-#         for gate in gates:
-#             if gate in [HAD, IDEN, NOT, FLIP]:
-#                 q = gate(q)
-#             elif gate == CNOT:
-
-# gaterepr = {
-#     IGATE() : '[ I ]',
-#     NGATE() : '[ X ]',
-#     HGATE() : '[ H ]',
-#     CNOTGATE() : '[ ⦿ ]'
-# }
 
 def getrepr(gate : Matrix) -> str:
     if gate == IGATE(): return '[ I ]'
@@ -458,7 +321,7 @@ class qprogram(object):
         
         self.calcrepr()
         print(self)
-        print("Compilation complete!")
+        print("Compilation complete!\n")
         return self
 
     def calcrepr(self):
@@ -471,7 +334,7 @@ class qprogram(object):
             string += line + '\n'
         self.repr = string
     
-    def run(self, shots : int = 1600, verbose : bool = False) -> None:
+    def run(self, shots : int = 1600, verbose : bool = False, binary : bool  = True, graph = False) -> None:
         length = len(self.gates[0])
 
         state = self.qbits[0]
@@ -495,4 +358,4 @@ class qprogram(object):
             state = tens ** state
             if verbose: print(state)
         
-        run(shots, state)
+        run(shots, state, binary=binary, graph=graph)
