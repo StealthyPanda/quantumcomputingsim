@@ -1,7 +1,6 @@
 # a qbit is [a, b] where a and b are complex numbers
 from math import atan, pi, log, cos,sin
 from random import random
-from types import NoneType
 from typing import Type
 import matplotlib.pyplot as plt
 
