@@ -1,6 +1,7 @@
 # a qbit is [a, b] where a and b are complex numbers
 from math import atan, pi, log, cos,sin
 from random import random
+from types import NoneType
 from typing import Type
 import matplotlib.pyplot as plt
 
@@ -294,6 +295,7 @@ class qprogram(object):
     def __init__(self, nqbits : int, custom : list = None) -> None:
         self.qbits = []
         self.nqbits = nqbits
+        self.cache = None
         if not custom: self.qbits = [qbit(0) for i in range(nqbits)]
         else:
             for each in custom:
@@ -301,6 +303,7 @@ class qprogram(object):
         self.gates = [[] for i in range(nqbits)]
 
     def addgates(self, qbitindex : int, gates : list):
+        self.cache = None
         self.gates[qbitindex] += gates
 
     def __repr__(self) -> str:
@@ -322,6 +325,7 @@ class qprogram(object):
         self.calcrepr()
         print(self)
         print("Compilation complete!\n")
+        self.cache = None
         return self
 
     def calcrepr(self):
@@ -334,7 +338,10 @@ class qprogram(object):
             string += line + '\n'
         self.repr = string
     
-    def run(self, shots : int = 1600, verbose : bool = False, binary : bool  = True, graph = False) -> None:
+    def getstate(self, verbose : bool = False, usecache : bool = True) -> list:
+        if self.cache != None and usecache:
+            print("Using cache...")
+            return self.cache
         length = len(self.gates[0])
 
         state = self.qbits[0]
@@ -357,5 +364,13 @@ class qprogram(object):
             if verbose: printreal(tens)
             state = tens ** state
             if verbose: print(state)
+        self.cache = state
+        return state
+
+    def measure(self, verbose : bool = False, usecache : bool = True) -> list:
+        return MEASURE(self.getstate(verbose = verbose, usecache=usecache))
+    
+    def run(self, shots : int = 1600, verbose : bool = False, binary : bool  = True, graph : bool = False, usecache : bool = True) -> None:
+        state = self.getstate(verbose = verbose, usecache=usecache)
         
         run(shots, state, binary=binary, graph=graph)
