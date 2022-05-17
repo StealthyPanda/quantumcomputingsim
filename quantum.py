@@ -141,6 +141,14 @@ def IGATE(n : int = 1) -> Matrix:
                 gate.rows[each][i] = comp(1, 0)
     return gate
 
+def SETTOGATE(value : int, n : int = 1):
+    if n == 1:
+        matrix = Matrix(2, 2) * 0
+        matrix.rows[value][0] = comp(1, 0)
+        matrix.rows[value][1] = comp(1, 0)
+        return matrix
+    else:
+        return mtensor(SETTOGATE(value = value), SETTOGATE(value = value, n =  n - 1))
 
 def NOT(qbit: list) -> list:
     return (NGATE(int(log(len(qbit), 2))) ** qbit)
