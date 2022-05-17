@@ -3,6 +3,8 @@ from math import atan, pi, log, cos,sin
 from random import random
 from typing import Type
 
+from numpy import matrix
+
 mple = True
 
 try:
@@ -59,6 +61,10 @@ class comp(object):
             return comp(self.a * real, self.b * real)
         except TypeError:
             return self.hack(real)
+    
+    def conjugate(self):
+        conj = comp(self.a, (-1 * self.b))
+        return conj
 
 class Matrix(object):
 
@@ -96,6 +102,20 @@ class Matrix(object):
         for each in self.rows:
             string += each.__repr__() + "\n"
         return string.strip()
+    
+    def transpose(self):
+        trans = Matrix(self.ncols, self.nrows)
+        for r in range(trans.nrows):
+            for c in range(trans.ncols):
+                trans.rows[r][c] = self.rows[c][r]
+        return trans
+    
+    def conjugate(self):
+        conj = Matrix(self.nrows, self.ncols)
+        for r in range(conj.nrows):
+            for c in range(conj.ncols):
+                conj.rows[r][c] = self.rows[r][c].conjugate()
+        return conj
 
 def mod(x, squared = False):
     if type(x) == type(comp(0, 0)):
@@ -177,6 +197,35 @@ def SHIFTGATE(state : list, phase : float) -> list:
 
 def SHIFT(phase : float) -> Type[lambda x: x]:
     return lambda x: SHIFTGATE(x, phase)
+
+def XGATE() -> Matrix:
+    matrix = Matrix(2, 2)
+    matrix[0][0] = 0
+    matrix[1][1] = 0
+    return matrix
+
+def YGATE() -> Matrix:
+    matrix = Matrix(2, 2) * comp(0, 1)
+    matrix[0][0] = 0
+    matrix[1][1] = 0
+    matrix[0][1] *= -1
+    return matrix
+
+def ZGATE() -> Matrix:
+    matrix = IGATE()
+    matrix[1][1] *= -1
+    return matrix
+
+
+def PHASEGATE(phase : float) -> Matrix:
+    matrixgate = Matrix(2, 2) * 0
+    matrixgate[0][0] = 1
+    matrixgate[1][1] = comp.polar(1, phase)
+    return matrixgate
+
+def dagger(gate : Matrix) -> Matrix:
+    return gate.conjugate().transpose()
+
 
 def mtensor(m1 : Matrix, m2 : Matrix) -> Matrix:
     r = m1.nrows * m2.nrows
