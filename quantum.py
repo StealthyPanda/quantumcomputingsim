@@ -278,7 +278,7 @@ def plotinterminal(measurement : list, binary = True) -> None:
     print(graph)
     return graph
 
-def run(shots : int, state : list, binary : bool = True, graph : bool = False) -> None:
+def run(shots : int, state : list, binary : bool = True, graph : bool = False, terminal : bool = False) -> None:
     sl = int(log(len(state), 2))
     res = [0 for i in range(len(state))]
     for each in range(shots):
@@ -292,7 +292,9 @@ def run(shots : int, state : list, binary : bool = True, graph : bool = False) -
         ret += (f"|Ψ{s}> : {float(res[each]/shots) * 100}%, ")
     ret = ret[:-2]
     print(ret)
-    if graph: plotmeasurement([((each/shots) * 100) for each in res], binary = binary)
+    if graph:
+        if not terminal: plotmeasurement([((each/shots) * 100) for each in res], binary = binary)
+        else: plotinterminal([((each/shots) * 100) for each in res], binary = binary)
 
 def extract(measurement : list, qbitindex : int) -> list:
     nqbits = int(log(len(measurement), 2))
@@ -390,7 +392,7 @@ class qprogram(object):
     def measure(self, verbose : bool = False, usecache : bool = True) -> list:
         return MEASURE(self.getstate(verbose = verbose, usecache=usecache))
     
-    def run(self, shots : int = 1600, verbose : bool = False, binary : bool  = True, graph : bool = False, usecache : bool = True) -> None:
+    def run(self, shots : int = 1600, verbose : bool = False, binary : bool  = True, graph : bool = False, usecache : bool = True, terminal : bool = False) -> None:
         state = self.getstate(verbose = verbose, usecache=usecache)
         
-        run(shots, state, binary=binary, graph=graph)
+        run(shots, state, binary=binary, graph=graph, terminal=terminal)
