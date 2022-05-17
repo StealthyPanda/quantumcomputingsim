@@ -2,7 +2,14 @@
 from math import atan, pi, log, cos,sin
 from random import random
 from typing import Type
-import matplotlib.pyplot as plt
+
+mple = True
+
+try:
+    import matplotlib.pyplot as plt
+except ModuleNotFoundError:
+    mple = False
+    print("Module `matplotlib` is not installed, will use terminal workarounds for graphing instead.")
 
 
 PI = pi
@@ -247,15 +254,29 @@ def CNOT(qcontrol : list, qtarget : list) ->list:
     return result
 
 
-def plotmeasurement(measurement : list, binary = True) -> list:
+def plotmeasurement(measurement : list, binary = True) -> None:
     eigenvectors = [('Ψ' + (('0' * (int(log(len(measurement), 2)) - len(str(bin(i))[2:]))) + str(bin(i))[2:])) for i in range(len(measurement))]
     if not binary : eigenvectors = [('Ψ' + str(i)) for i in range(len(measurement))]
-    plt.ylim(0, 100)
-    plt.bar(eigenvectors, measurement)
-    plt.xlabel("Eigenstates")
-    plt.ylabel("Percentage of outcomes")
-    plt.show()
+    if mple:
+        plt.ylim(0, 100)
+        plt.bar(eigenvectors, measurement)
+        plt.xlabel("Eigenstates")
+        plt.ylabel("Percentage of outcomes")
+        plt.show()
+    else:
+        plotinterminal(measurement=measurement, binary= binary)
 
+def plotinterminal(measurement : list, binary = True) -> None:
+    eigenvectors = [('Ψ' + (('0' * (int(log(len(measurement), 2)) - len(str(bin(i))[2:]))) + str(bin(i))[2:])) for i in range(len(measurement))]
+    if not binary : eigenvectors = [('Ψ' + str(i)) for i in range(len(measurement))]
+    graph = "\n"
+    for each in range(len(eigenvectors)):
+        graph += eigenvectors[each] + ' '
+        graph += ("█" * int(measurement[each] / 2))
+        if measurement[each] > 0: graph += (' ' + str(measurement[each]) + '%')
+        graph += '\n'
+    print(graph)
+    return graph
 
 def run(shots : int, state : list, binary : bool = True, graph : bool = False) -> None:
     sl = int(log(len(state), 2))
