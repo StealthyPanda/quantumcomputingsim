@@ -388,7 +388,7 @@ class qprogram(object):
     def __repr__(self) -> str:
         return self.repr    
 
-    def compile(self):
+    def compile(self, verbose : bool = False):
         print("\nCompiling program...")
         longest = 0
         for each in range(len(self.gates)):
@@ -404,6 +404,9 @@ class qprogram(object):
         self.calcrepr()
         print(self)
         print("Compilation complete!\n")
+
+        if verbose and self.cache is not None: print(self.cache)
+
         self.cache = None
         return self
 
