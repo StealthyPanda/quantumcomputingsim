@@ -129,9 +129,11 @@ def HGATE(m : int = 1) -> Matrix:
     if m == 0: return 1
     inner = HGATE(m-1)
     matrix = Matrix(int(pow(2, m)), int(pow(2, m)))
+    matrix.gateid = 'h'
     if m == 1:
         matrix = matrix * (1/pow(2, 0.5))
         matrix.rows[-1][-1] =  matrix.rows[-1][-1] * -1
+        matrix.gateid = 'h'
         return matrix
     for each in range(int(pow(2, m))):
         for i in range(int(pow(2, m))):
@@ -387,8 +389,9 @@ reprs = {
     'y' : '[ Y ]',
     'z' : '[ Z ]',
     'h' : '[ H ]',
-    'cnot' : '[ ⦿ ]',
-    'phase' : '[ θ ]'
+    'cnot' : '[ ⛒ ]',
+    'phase' : '[ θ ]',
+    'pin' : '[ ☉ ]'
 }
 
 
@@ -422,7 +425,9 @@ class qprogram(object):
         for each in range(len(self.gates)):
             for i in range(len(self.gates[each])):
                 if self.gates[each][i] == CNOTGATE():
-                    self.gates[each-1].insert(i, IGATE())
+                    pin = IGATE()
+                    pin.gateid = 'pin'
+                    self.gates[each-1].insert(i, pin)
         for each in range(len(self.gates)):
             if longest < len(self.gates[each]): longest = len(self.gates[each])
         
