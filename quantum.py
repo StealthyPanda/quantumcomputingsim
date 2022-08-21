@@ -2,9 +2,6 @@
 from math import atan, pi, log, cos,sin
 from random import random
 from typing import Type
-
-from numpy import matrix
-
 mple = True
 
 try:
@@ -78,7 +75,7 @@ class Matrix(object):
     def __init__(self, r : int, c : int):
         self.nrows = r
         self.ncols = c
-
+        self.gateid = None
         self.rows = [[comp(1, 0) for i in range(self.ncols)] for x in range(self.nrows)]
 
     def __pow__(self, vector : list):
@@ -141,6 +138,7 @@ def HGATE(m : int = 1) -> Matrix:
             matrix.rows[each][i] = inner.rows[each % int(pow(2, m-1))][i % int(pow(2, m-1))]
             if (pow(2, m-1) <= each) and (pow(2, m-1) <= i): matrix.rows[each][i] *= -1
     matrix = matrix * (1/pow(2, 0.5))
+    matrix.gateid = 'h'
     return matrix
 
 def NGATE(n : int = 1) -> Matrix:
@@ -150,6 +148,7 @@ def NGATE(n : int = 1) -> Matrix:
     for each in range(pow(2, n)):
         for i in range(pow(2, n)):
             if (each + i) == (pow(2, n) - 1): gate.rows[each][i] = comp(1, 0)
+    gate.gateid = 'n'
     return gate
 
 def IGATE(n : int = 1) -> Matrix:
@@ -159,6 +158,7 @@ def IGATE(n : int = 1) -> Matrix:
         for i in range(pow(2, n)):
             if each == i:
                 gate.rows[each][i] = comp(1, 0)
+    gate.gateid = 'i'
     return gate
 
 def SETTOGATE(value : int, n : int = 1):
@@ -198,29 +198,44 @@ def SHIFTGATE(state : list, phase : float) -> list:
 def SHIFT(phase : float) -> Type[lambda x: x]:
     return lambda x: SHIFTGATE(x, phase)
 
+
+def RGATE(angle : float):
+    matrix = Matrix(2, 2)
+    matrix.rows[0][0] = comp(sin(angle), 0)
+    matrix.rows[0][1] = comp(cos(angle), 0)
+    matrix.rows[1][0] = comp(cos(angle), 0)
+    matrix.rows[1][1] = comp(-sin(angle), 0)
+    matrix.gateid = 'r'
+    return matrix
+
+
 def XGATE() -> Matrix:
     matrix = Matrix(2, 2)
-    matrix[0][0] = 0
-    matrix[1][1] = 0
+    matrix.rows[0][0] = 0
+    matrix.rows[1][1] = 0
+    matrix.gateid = 'x'
     return matrix
 
 def YGATE() -> Matrix:
     matrix = Matrix(2, 2) * comp(0, 1)
-    matrix[0][0] = 0
-    matrix[1][1] = 0
-    matrix[0][1] *= -1
+    matrix.rows[0][0] = 0
+    matrix.rows[1][1] = 0
+    matrix.rows[0][1] *= -1
+    matrix.gateid = 'y'
     return matrix
 
 def ZGATE() -> Matrix:
     matrix = IGATE()
-    matrix[1][1] *= -1
+    matrix.rows[1][1] *= -1
+    matrix.gateid = 'z'
     return matrix
 
 
 def PHASEGATE(phase : float) -> Matrix:
     matrixgate = Matrix(2, 2) * 0
-    matrixgate[0][0] = 1
-    matrixgate[1][1] = comp.polar(1, phase)
+    matrixgate.rows[0][0] = 1
+    matrixgate.rows[1][1] = comp.polar(1, phase)
+    matrixgate.gateid = 'phase'
     return matrixgate
 
 def dagger(gate : Matrix) -> Matrix:
@@ -296,13 +311,16 @@ def CNOTGATEOLD(controlindex : int = 0, targetindex : int = 1) -> Matrix:
         buffer = cg.rows[-1]
         cg.rows[-1] = cg.rows[1]
         cg.rows[1] = buffer
+    cg.gateid = 'cnot'
     return cg
 
 def CNOTGATE(nqbits : int = 2, controlindex : int = 0, targetindex : int = 1) -> list:
     if controlindex == targetindex: raise BaseException("control and target cannot be the same")
     if nqbits <= 1: raise BaseException("nqbits cannot be less than 2")
     if nqbits == 2: return CNOTGATEOLD()
-    return mtensor(CNOTGATEOLD(controlindex = controlindex, targetindex = targetindex), CNOTGATE(nqbits - 1, controlindex= controlindex, targetindex=targetindex))
+    t = mtensor(CNOTGATEOLD(controlindex = controlindex, targetindex = targetindex), CNOTGATE(nqbits - 1, controlindex= controlindex, targetindex=targetindex))
+    t.gateid = 'cnot'
+    return t
 
 
 def CNOT(qcontrol : list, qtarget : list) ->list:
@@ -361,14 +379,24 @@ def extract(measurement : list, qbitindex : int) -> list:
     return ([0, 1] if index else [1, 0])
 
 
+reprs = {
+    'r' : '[ R ]',
+    'i' : '[ I ]',
+    'n' : '[ ~ ]',
+    'x' : '[ X ]',
+    'y' : '[ Y ]',
+    'z' : '[ Z ]',
+    'h' : '[ H ]',
+    'cnot' : '[ ⦿ ]',
+    'phase' : '[ θ ]'
+}
 
 
 def getrepr(gate : Matrix) -> str:
-    if gate == IGATE(): return '[ I ]'
-    elif gate == NGATE(): return '[ X ]'
-    elif gate == HGATE(): return '[ H ]'
-    elif gate == CNOTGATE(): return '[ ⦿ ]'
-    return '[ ! ]'
+    try : return reprs[gate.gateid]
+    except : 
+        print(f"Gate represntation not found: {gate.gateid}")
+        return '[ ! ]'
 
 class qprogram(object):
     def __init__(self, nqbits : int, custom : list = None) -> None:
