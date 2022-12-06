@@ -1,7 +1,8 @@
 # a qbit is [a, b] where a and b are complex numbers
-from math import atan, pi, log, cos,sin
+from math import atan, pi, log, cos, sin
 from random import random
 from typing import Type
+from copy import deepcopy
 mple = True
 
 try:
@@ -190,6 +191,13 @@ def FLIP(state: list) -> list:
         flipped.append(each)
     return flipped
 
+def flipgate(gate : Matrix) -> Matrix:
+    flipped = Matrix(gate.nrows, gate.ncols)
+    flipped.gateid = gate.gateid
+    flipped.rows = deepcopy(gate.rows)
+    flipped.rows = flipped.rows[::-1]
+    return flipped
+
 def SHIFTGATE(state : list, phase : float) -> list:
     shifted = []
     rotor = comp.polar(1, phase)
@@ -316,13 +324,22 @@ def CNOTGATEOLD(controlindex : int = 0, targetindex : int = 1) -> Matrix:
     cg.gateid = 'cnot'
     return cg
 
-def CNOTGATE(nqbits : int = 2, controlindex : int = 0, targetindex : int = 1) -> list:
+def CNOTGATE(nqbits : int = 2, controlindex : int = 0, targetindex : int = 1) -> Matrix:
     if controlindex == targetindex: raise BaseException("control and target cannot be the same")
     if nqbits <= 1: raise BaseException("nqbits cannot be less than 2")
     if nqbits == 2: return CNOTGATEOLD()
     t = mtensor(CNOTGATEOLD(controlindex = controlindex, targetindex = targetindex), CNOTGATE(nqbits - 1, controlindex= controlindex, targetindex=targetindex))
     t.gateid = 'cnot'
     return t
+
+def FLIPPEDCNOTGATE(nqbits : int = 2) -> Matrix:
+    fcnot = Matrix(4, 4) * 0
+    fcnot.rows[0][0] = comp(1, 0)
+    fcnot.rows[1][3] = comp(1, 0)
+    fcnot.rows[2][2] = comp(1, 0)
+    fcnot.rows[3][1] = comp(1, 0)
+    fcnot.gateid = 'fcnot'
+    return fcnot
 
 
 def CNOT(qcontrol : list, qtarget : list) ->list:
@@ -390,6 +407,7 @@ reprs = {
     'z' : '[ Z ]',
     'h' : '[ H ]',
     'cnot' : '[ ⛒ ]',
+    'fcnot' : '[ ⛒ ]',
     'phase' : '[ θ ]',
     'pin' : '[ ☉ ]'
 }
@@ -419,15 +437,19 @@ class qprogram(object):
     def __repr__(self) -> str:
         return self.repr    
 
-    def compile(self, verbose : bool = False):
-        print("\nCompiling program...")
+    def compile(self, verbose : bool = False, showcompilationresult : bool = True):
+        if showcompilationresult : print("\nCompiling program...")
         longest = 0
         for each in range(len(self.gates)):
             for i in range(len(self.gates[each])):
-                if self.gates[each][i] == CNOTGATE():
+                if self.gates[each][i].gateid == 'cnot':
                     pin = IGATE()
                     pin.gateid = 'pin'
-                    self.gates[each-1].insert(i, pin)
+                    self.gates[each - 1].insert(i, pin)
+                elif self.gates[each][i].gateid == 'fcnot':
+                    pin = IGATE()
+                    pin.gateid = 'pin'
+                    self.gates[each + 1].insert(i, pin)
         for each in range(len(self.gates)):
             if longest < len(self.gates[each]): longest = len(self.gates[each])
         
@@ -435,8 +457,10 @@ class qprogram(object):
             self.gates[each] += [IGATE() for i in range(longest - len(self.gates[each]))]
         
         self.calcrepr()
-        print(self)
-        print("Compilation complete!\n")
+        
+        if showcompilationresult:
+            print(self)
+            print("Compilation complete!\n")
 
         if verbose and self.cache is not None: print(self.cache)
 
@@ -466,10 +490,11 @@ class qprogram(object):
             gates = []
             for i in range(self.nqbits): 
                 if verbose: print("ngates", len(gates))
-                if self.gates[i][each] == CNOTGATE(): 
+                if self.gates[i][each].gateid == 'cnot': 
                     if verbose: print('activated')
                     del gates[-1]
-                gates.append(self.gates[i][each])
+                if i == 0: gates.append(self.gates[i][each])
+                elif self.gates[i - 1][each].gateid != 'fcnot': gates.append(self.gates[i][each])
             if verbose: print(len(gates))
             tens = gates[0]
             # printreal(tens)
