@@ -1,25 +1,20 @@
-import sys
 from quantum import *
+import threading
 
-test = qprogram(3)
+newbasis = basischange(HGATE())
 
-test.addgates(0, [HAD, test.CNOTT(1)])
-test.addgates(1, [HAD, NOT])
-test.addgates(2, [HAD, HAD, NOT])
+q = qprogram(2, bchange = None, name = 'No Basis')
+r = qprogram(2, bchange = newbasis, name = 'H Basis')
 
-test.compile()
-print(test)
-# print(HAD(qbit(0)))
-print(test.get(2, 2))
-sys.exit(0)
+q.addgates(0, [HGATE()])
+q.addgates(1, [HGATE()])
+r.addgates(0, [HGATE()])
+r.addgates(1, [HGATE()])
+# q.addgates(1, [IGATE(), CNOTGATE()])
+# q.addgates(2, [IGATE(), IGATE(), CNOTGATE()])
 
-aq = NOT(HAD(HAD(qbit(0))))
+q.compile()
+r.compile()
 
-print(extract(MEASURE(test.getstate(0)), 0), extract(MEASURE(test.getstatetensor()), 0))
-
-# for each in range(10):
-#     m = test.measure()
-#     print(m.index(1), extract(m, 0), extract(m, 1), extract(m, 2), extract(MEASURE(aq), 0), m)
-
-# for each in range(10):
-#     print((test.measure(0)), (test.measure(1)), (test.measure(2)))
+q.run(graph=True)
+r.run(graph=True)
