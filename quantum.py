@@ -265,6 +265,19 @@ def mtensor(m1 : Matrix, m2 : Matrix) -> Matrix:
     return product
 
 
+class basischange:
+    def __init__(self, transformationmatrix : Matrix) -> None:
+        r, c = transformationmatrix.nrows, transformationmatrix.ncols
+        assert (r == 2) and (c == 2) , f"transformationmatrix must be a 2x2 matrix; got {r}x{c}"
+        self.transmat = transformationmatrix
+    
+    def get(self, nqubitsinsystem : int = 1):
+        if nqubitsinsystem == 1: return self.transmat
+        else:
+            retter = deepcopy(self.transmat)
+            for _ in range(nqubitsinsystem - 1):
+                retter = mtensor(self.transmat, retter)
+            return retter
 
 def MEASURE(tensor: list) -> list:
     prev = 0
@@ -348,7 +361,7 @@ def CNOT(qcontrol : list, qtarget : list) ->list:
     return result
 
 
-def plotmeasurement(measurement : list, binary = True) -> None:
+def plotmeasurement(measurement : list, binary = True, name : str = None) -> None:
     eigenvectors = [('Ψ' + (('0' * (int(log(len(measurement), 2)) - len(str(bin(i))[2:]))) + str(bin(i))[2:])) for i in range(len(measurement))]
     if not binary : eigenvectors = [('Ψ' + str(i)) for i in range(len(measurement))]
     if mple:
@@ -356,14 +369,16 @@ def plotmeasurement(measurement : list, binary = True) -> None:
         plt.bar(eigenvectors, measurement)
         plt.xlabel("Eigenstates")
         plt.ylabel("Percentage of outcomes")
+        if name is not None : plt.title(name)
         plt.show()
     else:
         plotinterminal(measurement=measurement, binary= binary)
 
-def plotinterminal(measurement : list, binary = True) -> None:
+def plotinterminal(measurement : list, binary = True, name : str = None) -> None:
     eigenvectors = [('Ψ' + (('0' * (int(log(len(measurement), 2)) - len(str(bin(i))[2:]))) + str(bin(i))[2:])) for i in range(len(measurement))]
     if not binary : eigenvectors = [('Ψ' + str(i)) for i in range(len(measurement))]
-    graph = "\n"
+    graph = f"\n{'' if name is None else name}"
+    if name is not None: graph += '\n'
     for each in range(len(eigenvectors)):
         graph += eigenvectors[each] + ' '
         graph += ("█" * int(measurement[each] / 2))
@@ -372,7 +387,7 @@ def plotinterminal(measurement : list, binary = True) -> None:
     print(graph)
     return graph
 
-def run(shots : int, state : list, binary : bool = True, graph : bool = False, terminal : bool = False) -> None:
+def run(shots : int, state : list, binary : bool = True, graph : bool = False, terminal : bool = False, name : str = None) -> None:
     sl = int(log(len(state), 2))
     res = [0 for i in range(len(state))]
     for each in range(shots):
@@ -387,8 +402,8 @@ def run(shots : int, state : list, binary : bool = True, graph : bool = False, t
     ret = ret[:-2]
     print(ret)
     if graph:
-        if not terminal: plotmeasurement([((each/shots) * 100) for each in res], binary = binary)
-        else: plotinterminal([((each/shots) * 100) for each in res], binary = binary)
+        if not terminal: plotmeasurement([((each/shots) * 100) for each in res], binary = binary, name = name)
+        else: plotinterminal([((each/shots) * 100) for each in res], binary = binary, name = name)
 
 def extract(measurement : list, qbitindex : int) -> list:
     nqbits = int(log(len(measurement), 2))
@@ -420,7 +435,7 @@ def getrepr(gate : Matrix) -> str:
         return '[ ! ]'
 
 class qprogram(object):
-    def __init__(self, nqbits : int, custom : list = None) -> None:
+    def __init__(self, nqbits : int, custom : list = None, bchange : basischange = None, name : str = None) -> None:
         self.qbits = []
         self.nqbits = nqbits
         self.cache = None
@@ -429,16 +444,19 @@ class qprogram(object):
             for each in custom:
                 self.qbits.append(qbit(each))
         self.gates = [[] for i in range(nqbits)]
+        self.bchange = bchange
+        self.name = name
+        self.repr = f"The program {'' if self.name is None else self.name} is yet to be compiled"
 
     def addgates(self, qbitindex : int, gates : list):
         self.cache = None
         self.gates[qbitindex] += gates
 
     def __repr__(self) -> str:
-        return self.repr    
+        return self.repr
 
     def compile(self, verbose : bool = False, showcompilationresult : bool = True):
-        if showcompilationresult : print("\nCompiling program...")
+        if showcompilationresult : print(f"\nCompiling {'program' if self.name is None else self.name}...")
         longest = 0
         for each in range(len(self.gates)):
             for i in range(len(self.gates[each])):
@@ -468,7 +486,8 @@ class qprogram(object):
         return self
 
     def calcrepr(self):
-        string = "\n"
+        string = f"\n{'' if self.name is None else self.name}"
+        if self.name is not None: string += '\n'
         for each in range(self.nqbits):
             line = f"q{str(each)} ({self.qbits[each][1]}) ⮕  ---"
             for i in range(len(self.gates[each])):
@@ -504,6 +523,9 @@ class qprogram(object):
             if verbose: printreal(tens)
             state = tens ** state
             if verbose: print(state)
+        
+        if self.bchange is not None: state = self.bchange.get(self.nqbits) ** state
+        
         self.cache = state
         return state
 
@@ -513,4 +535,4 @@ class qprogram(object):
     def run(self, shots : int = 1600, verbose : bool = False, binary : bool  = True, graph : bool = False, usecache : bool = True, terminal : bool = False) -> None:
         state = self.getstate(verbose = verbose, usecache=usecache)
         
-        run(shots, state, binary=binary, graph=graph, terminal=terminal)
+        run(shots, state, binary=binary, graph=graph, terminal=terminal, name = self.name)
