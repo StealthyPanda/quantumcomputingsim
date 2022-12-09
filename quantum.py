@@ -340,9 +340,9 @@ def CNOTGATEOLD(controlindex : int = 0, targetindex : int = 1) -> Matrix:
 def CNOTGATE(nqbits : int = 2, controlindex : int = 0, targetindex : int = 1) -> Matrix:
     if controlindex == targetindex: raise BaseException("control and target cannot be the same")
     if nqbits <= 1: raise BaseException("nqbits cannot be less than 2")
-    if nqbits == 2: return CNOTGATEOLD()
+    if nqbits == 2: return CNOTGATEOLD(controlindex = controlindex, targetindex = targetindex)
     t = mtensor(CNOTGATEOLD(controlindex = controlindex, targetindex = targetindex), CNOTGATE(nqbits - 1, controlindex= controlindex, targetindex=targetindex))
-    t.gateid = 'cnot'
+    t.gateid = 'cnot' + str(controlindex)
     return t
 
 def FLIPPEDCNOTGATE(nqbits : int = 2) -> Matrix:
