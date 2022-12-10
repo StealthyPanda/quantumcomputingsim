@@ -1,20 +1,13 @@
 from quantum import *
-import threading
 
-newbasis = basischange(HGATE())
+# print(CNOTR(controlbitindex=1))
+# print(CNOTR(controlbitindex=1).span)
 
-q = qprogram(2, bchange = None, name = 'No Basis')
-r = qprogram(2, bchange = newbasis, name = 'H Basis')
+q = qprogram(2, name = 'refactor testing')
 
-q.addgates(0, [HGATE()])
-q.addgates(1, [IGATE(), CNOTGATE()])
-r.addgates(0, [HGATE()])
-r.addgates(1, [IGATE(), CNOTGATE()])
-# q.addgates(1, [IGATE(), CNOTGATE()])
-# q.addgates(2, [IGATE(), IGATE(), CNOTGATE()])
+q.addgates(0, [HGATE(), HGATE()])
+q.addgates(1, [IGATE(), CNOTR()])
 
 q.compile()
-r.compile()
 
-q.run(graph=True)
-r.run(graph=True)
+q.run(graph = True, terminal = True)

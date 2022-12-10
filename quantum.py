@@ -78,6 +78,7 @@ class Matrix(object):
         self.ncols = c
         self.gateid = None
         self.rows = [[comp(1, 0) for i in range(self.ncols)] for x in range(self.nrows)]
+        self.span = int(log(r, 2))
 
     def __pow__(self, vector : list):
         prod = []
@@ -344,6 +345,20 @@ def CNOTGATE(nqbits : int = 2, controlindex : int = 0, targetindex : int = 1) ->
     t = mtensor(CNOTGATEOLD(controlindex = controlindex, targetindex = targetindex), CNOTGATE(nqbits - 1, controlindex= controlindex, targetindex=targetindex))
     t.gateid = 'cnot' + str(controlindex)
     return t
+
+def CNOTR(controlbitindex : int = 0) -> Matrix:
+    gate = Matrix(4, 4) * 0
+    gate.gateid = 'cnotr'
+
+    gate.rows[0][0] = comp(1, 0)
+    gate.rows[1][1] = comp(1, 0)
+    gate.rows[2][2] = comp(1, 0)
+    gate.rows[3][3] = comp(1, 0)
+
+    if controlbitindex == 0: gate.rows[2], gate.rows[3] = gate.rows[3], gate.rows[2]
+    else: gate.rows[1], gate.rows[3] = gate.rows[3], gate.rows[1]
+
+    return gate
 
 def FLIPPEDCNOTGATE(nqbits : int = 2) -> Matrix:
     fcnot = Matrix(4, 4) * 0
