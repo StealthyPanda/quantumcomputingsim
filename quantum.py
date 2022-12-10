@@ -16,15 +16,19 @@ PI = pi
 pi = pi
 
 class comp(object):
-    def __init__(self, a : float, b: float):
-        self.a = a
-        self.b = b
-        self.r = pow(( pow(a, 2) + pow(b, 2) ), 0.5)
+    def __init__(self, a : float = 0, b : float = 0):
+        if type(a) == comp:
+            self.a, self.b = a.a, a.b
+        else:
+            self.a = a
+            self.b = b
+        self.r = pow(( pow(self.a, 2) + pow(self.b, 2) ), 0.5)
         try:
-            self.theta = atan((b/a))
+            self.theta = atan((self.b/self.a))
         except ZeroDivisionError:
             self.theta = pi/2 * (1 if self.b >= 0 else -1)
 
+    #theta is measured in radians; use quantum.pi for π
     def polar(r : float, theta : float):
         return comp(r * cos(theta), r * sin(theta))
 
@@ -35,30 +39,40 @@ class comp(object):
     def __repr__(self) -> str:
         return ("%.2f %s i%.2f" % (self.a, "+" if self.b >= 0 else "-", self.b if self.b >= 0 else (-1 * self.b)))
     
-    def __add__(self, other):
+    def __add__(self, other : object):
         return comp(self.a + other.a, self.b + other.b)
     
-    def __pow__(self, p):
-        power = comp(1, 0)
-        for each in range(p):
-            power = power * self
-        return power
+    def __pow__(self, p : float):
+        return comp.polar( pow(self.r, p) , self.theta * p)
     
-    def getcomplex(number : any):
+    def __sub__(self, other : object):
+        return (self + (other * -1))
+
+    def getcomplex(number : object or float or int):
         if type(number) == type(comp(1, 0)): return number
         return comp(number, 0)
 
-    def __mul__(self, other):
-        return comp((self.a * other.a) - (self.b * other.b), (self.a * other.b) + (self.b * other.a))
-    
-    def hack(self, other):
-        return comp((self.a * other.a) - (self.b * other.b), (self.a * other.b) + (self.b * other.a))
 
-    def __mul__(self, real : float):
-        try:
-            return comp(self.a * real, self.b * real)
-        except TypeError:
-            return self.hack(real)
+    def __truediv__(self, other : object or float or int):
+        assert (
+            (type(other) == comp) or (type(other) == float) or (type(other) == int)
+        ), f"Comp cannot be divided by a {type(other)}!"
+        if type(other) == comp:
+            return (self * other.inverse())
+        else:
+            return comp(self.a/other, self.b/other)
+
+    def __mul__(self, other : object or float or int):
+        assert (
+            (type(other) == comp) or (type(other) == float) or (type(other) == int)
+        ), f"Comp cannot be multiplied with a {type(other)}!"
+        if type(other) == comp:
+            return comp((self.a * other.a) - (self.b * other.b), (self.a * other.b) + (self.b * other.a))
+        else:
+            return comp(self.a * other, self.b * other)
+    
+    def inverse(self):
+        return comp( self.a/pow(self.r, 2) , (-self.b)/pow(self.r, 2))
     
     def conjugate(self):
         conj = comp(self.a, (-1 * self.b))
