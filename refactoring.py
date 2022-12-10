@@ -13,4 +13,4 @@ c = comp(0, -3)
 # print(f"c - a = {c - a}")
 # print(b.inverse() * b)
 
-print(comp(b), comp.getcomplex(b))
+print(comp(b), comp.getcomplex(b), comp(8))
