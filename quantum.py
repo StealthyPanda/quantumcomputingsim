@@ -94,22 +94,6 @@ class Matrix(object):
         self.rows = [[(comp(1) if i == x else comp()) for i in range(self.ncols)] for x in range(self.nrows)]
         self.span = int(log(r, 2))
 
-    # def __pow__(self, vector : list):
-    #     prod = []
-    #     for each in range(self.nrows):
-    #         dot = comp(0, 0)
-    #         for i in range(self.ncols):
-    #             dot += self.rows[each][i] * vector[i]
-    #         prod.append(dot)
-    #     return prod
-
-    # def __mul__(self, scalar : float):
-    #     prod = Matrix(self.nrows, self.ncols)
-    #     for each in range(self.nrows):
-    #         for i in range(self.ncols):
-    #             prod.rows[each][i]  = self.rows[each][i] * scalar
-    #     return prod
-
     def internaldot(a : list, b : list) -> float:
         assert len(a) == len(b)
         d = 0
@@ -136,8 +120,8 @@ class Matrix(object):
             return (self * buffer)
         else:
             product = deepcopy(self)
-            for each in range(product.r):
-                for i in range(product.c):
+            for each in range(product.nrows):
+                for i in range(product.ncols):
                     product.rows[each][i] = product.rows[each][i] * other
             return product
     
@@ -147,6 +131,46 @@ class Matrix(object):
         ), f"Matrix cannot be divided by a {type(other)}!"
         if type(other) == comp: return(self * other.inverse())
         return (self * (1/other))
+    
+    def determinant(matrix):
+        assert matrix.nrows == matrix.ncols, f"Matrix must a square matrix; got dimensions {matrix.nrows}x{matrix.ncols}"
+        if matrix.ncols == 1: return matrix.rows[0][0]
+        if matrix.ncols == 2:
+            return (matrix.rows[0][0] * matrix.rows[1][1]) - (matrix.rows[0][1] * matrix.rows[1][0])
+        det = comp()
+        for each in range(matrix.ncols):
+            subdet = matrix.rows[0][each] * ((-1)**each)
+            submat = [x[:each] + x[each + 1:] for x in matrix.rows[1:]]
+            submatrix = Matrix(len(submat), len(submat[0]))
+            submatrix.rows = submat
+            # print(f'submatrix{each}\n', submatrix, '\n\n')
+            subdet *= Matrix.determinant(submatrix)
+            det += subdet
+        return det
+
+    def adjoint(matrix):
+        assert matrix.nrows == matrix.ncols, f"Matrix must a square matrix; got dimensions {matrix.nrows}x{matrix.ncols}"
+        adj = deepcopy(matrix)
+        if matrix.nrows == 2:
+            adj.rows[0][0] = matrix.rows[1][1]
+            adj.rows[0][1] = matrix.rows[1][0] * -1
+            adj.rows[1][0] = matrix.rows[0][1] * -1
+            adj.rows[1][1] = matrix.rows[0][0]
+            return adj.transpose()
+        for each in range(adj.nrows):
+            for i in range(adj.ncols):
+                submat = [x[:i] + x[i + 1:] for x in (matrix.rows[:each] + matrix.rows[each + 1:])]
+                submatrix = Matrix(len(submat), len(submat[0]))
+                submatrix.rows = submat
+                print(f"submatrix{each},{i}:")
+                print(submatrix)
+                print()
+                adj.rows[each][i] = submatrix.determinant() * ((-1) ** (each + i))
+        adj = adj.transpose()
+        return adj
+    
+    def inverse(self):
+        return (self.adjoint() / self.determinant())
 
 
     def __repr__(self) -> str:
