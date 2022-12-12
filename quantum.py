@@ -96,7 +96,7 @@ class Matrix(object):
 
     def internaldot(a : list, b : list) -> float:
         assert len(a) == len(b)
-        d = 0
+        d = comp()
         for each in range(len(a)):
             d += (comp.getcomplex(a[each]) * b[each])
         return d
@@ -106,12 +106,12 @@ class Matrix(object):
             (type(other) == Matrix) or (type(other) == list) or (type(other) == int) or (type(other) == comp) or (type(other) == float)
         ), f"Matrix cannot be multiplied by a {type(other)}!"
         if type(other) == Matrix:
-            assert self.c == other.r, f"Dimensions of matrices don't match: {self.r}x{self.c} and {other.r}x{other.c}"
-            product = Matrix(self.r, other.c)
+            assert self.ncols == other.nrows, f"Dimensions of matrices don't match: {self.nrows}x{self.ncols} and {other.nrows}x{other.ncols}"
+            product = Matrix(self.nrows, other.ncols)
             ot = other.transpose()
-            for each in range(self.r):
-                for i in range(other.c):
-                    product[each][i] = Matrix.internaldot(self.rows[each], other.rows[i])
+            for each in range(self.nrows):
+                for i in range(other.ncols):
+                    product.rows[each][i] = Matrix.internaldot(self.rows[each], ot.rows[i])
             return product
         elif type(other) == list:
             buffer = Matrix(1, len(other))
@@ -193,6 +193,9 @@ class Matrix(object):
             for c in range(conj.ncols):
                 conj.rows[r][c] = self.rows[r][c].conjugate()
         return conj
+    
+    def dagger(matrix):
+        return matrix.conjugate().transpose()
 
 def mod(x, squared = False):
     if type(x) == type(comp(0, 0)):
