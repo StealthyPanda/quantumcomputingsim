@@ -46,12 +46,20 @@ b = Matrix([
 
 qprog = qprogram(3, name='refactor testing')
 
-something = Matrix(8, 8, id = 'spagett')
+something = Matrix(8, 8, id = 's')
 
-qprog.addgates(0, [something])
-qprog.addgates(1, [cnot1])
-qprog.addgates(2, [hgate])
+qprog.addgates(0, [igate, something])
+qprog.addgates(1, [hgate])
+# qprog.addgates(2, [])
 
 qprog.compile()
 
 qprog.run()
+
+# print(mtensor(hgate, igate))
+# print()
+# print(cnot0)
+# print()
+# print(mtensor(hgate, igate) * cnot0)
+# print()
+# print((mtensor(hgate, igate) * cnot0) * [1, 0, 0, 0])

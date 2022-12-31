@@ -364,9 +364,9 @@ mtensoridentity = Matrix([
     [comp(1)]
 ], id = 'm')
 
-def HGATE(m : int = 1) -> Matrix:
+def legacy_HGATE(m : int = 1) -> Matrix:
     if m == 0: return 1
-    inner = HGATE(m-1)
+    inner = legacy_HGATE(m-1)
     matrix = Matrix(int(pow(2, m)), int(pow(2, m)))
     matrix.gateid = 'h'
     if m == 1:
@@ -382,7 +382,7 @@ def HGATE(m : int = 1) -> Matrix:
     matrix.gateid = 'h'
     return matrix
 
-def NGATE(n : int = 1) -> Matrix:
+def legacy_NGATE(n : int = 1) -> Matrix:
     gate = Matrix(pow(2, n), pow(2, n))
     gate = gate * 0
     # buffer = Matrix(pow(2, n), pow(2, n))
@@ -392,7 +392,7 @@ def NGATE(n : int = 1) -> Matrix:
     gate.gateid = 'n'
     return gate
 
-def IGATE(n : int = 1) -> Matrix:
+def legacy_IGATE(n : int = 1) -> Matrix:
     gate = Matrix(pow(2, n), pow(2, n))
     gate = gate * 0
     for each in range(pow(2, n)):
@@ -402,26 +402,26 @@ def IGATE(n : int = 1) -> Matrix:
     gate.gateid = 'i'
     return gate
 
-def SETTOGATE(value : int, n : int = 1):
+def legacy_SETTOGATE(value : int, n : int = 1):
     if n == 1:
         matrix = Matrix(2, 2) * 0
         matrix.rows[value][0] = comp(1, 0)
         matrix.rows[value][1] = comp(1, 0)
         return matrix
     else:
-        return mtensor(SETTOGATE(value = value), SETTOGATE(value = value, n =  n - 1))
+        return mtensor(legacy_SETTOGATE(value = value), legacy_SETTOGATE(value = value, n =  n - 1))
 
-def NOT(qbit: list) -> list:
-    return (NGATE(int(log(len(qbit), 2))) ** qbit)
+def legacy_NOT(qbit: list) -> list:
+    return (legacy_NGATE(int(log(len(qbit), 2))) ** qbit)
 
-def IDEN(qbit : list) -> list:
+def legacy_IDEN(qbit : list) -> list:
     return qbit
 
-def HAD(qbit : list) -> list:
+def legacy_HAD(qbit : list) -> list:
     # print(qbit)
-    return HGATE(int(log(len(qbit), 2))) ** qbit
+    return legacy_HGATE(int(log(len(qbit), 2))) ** qbit
 
-def FLIP(state: list) -> list:
+def legacy_FLIP(state: list) -> list:
     flipped = []
     for each in state:
         each = comp.getcomplex(each)
@@ -429,25 +429,25 @@ def FLIP(state: list) -> list:
         flipped.append(each)
     return flipped
 
-def flipgate(gate : Matrix) -> Matrix:
+def legacy_flipgate(gate : Matrix) -> Matrix:
     flipped = Matrix(gate.nrows, gate.ncols)
     flipped.gateid = gate.gateid
     flipped.rows = deepcopy(gate.rows)
     flipped.rows = flipped.rows[::-1]
     return flipped
 
-def SHIFTGATE(state : list, phase : float) -> list:
+def legacy_SHIFTGATE(state : list, phase : float) -> list:
     shifted = []
     rotor = comp.polar(1, phase)
     for each in state:
         shifted.append(comp.getcomplex(each) * rotor)
     return shifted
 
-def SHIFT(phase : float) -> Type[lambda x: x]:
-    return lambda x: SHIFTGATE(x, phase)
+def legacy_SHIFT(phase : float) -> Type[lambda x: x]:
+    return lambda x: legacy_SHIFTGATE(x, phase)
 
 
-def RGATE(angle : float):
+def legacy_RGATE(angle : float):
     matrix = Matrix(2, 2)
     matrix.rows[0][0] = comp(sin(angle), 0)
     matrix.rows[0][1] = comp(cos(angle), 0)
@@ -457,14 +457,14 @@ def RGATE(angle : float):
     return matrix
 
 
-def XGATE() -> Matrix:
+def legacy_XGATE() -> Matrix:
     matrix = Matrix(2, 2)
     matrix.rows[0][0] = 0
     matrix.rows[1][1] = 0
     matrix.gateid = 'x'
     return matrix
 
-def YGATE() -> Matrix:
+def legacy_YGATE() -> Matrix:
     matrix = Matrix(2, 2) * comp(0, 1)
     matrix.rows[0][0] = 0
     matrix.rows[1][1] = 0
@@ -472,14 +472,14 @@ def YGATE() -> Matrix:
     matrix.gateid = 'y'
     return matrix
 
-def ZGATE() -> Matrix:
-    matrix = IGATE()
+def legacy_ZGATE() -> Matrix:
+    matrix = legacy_IGATE()
     matrix.rows[1][1] *= -1
     matrix.gateid = 'z'
     return matrix
 
 
-def PHASEGATE(phase : float) -> Matrix:
+def legacy_PHASEGATE(phase : float) -> Matrix:
     matrixgate = Matrix(2, 2) * 0
     matrixgate.rows[0][0] = 1
     matrixgate.rows[1][1] = comp.polar(1, phase)
@@ -508,7 +508,7 @@ class basischange:
 
 
 
-def CNOTGATEOLD(controlindex : int = 0, targetindex : int = 1) -> Matrix:
+def legacy_CNOTGATEOLD(controlindex : int = 0, targetindex : int = 1) -> Matrix:
     cg = Matrix(4, 4)
     cg = cg * 0
     for each in range(4):
@@ -525,15 +525,15 @@ def CNOTGATEOLD(controlindex : int = 0, targetindex : int = 1) -> Matrix:
     cg.gateid = 'cnot'
     return cg
 
-def CNOTGATE(nqbits : int = 2, controlindex : int = 0, targetindex : int = 1) -> Matrix:
+def legacy_CNOTGATE(nqbits : int = 2, controlindex : int = 0, targetindex : int = 1) -> Matrix:
     if controlindex == targetindex: raise BaseException("control and target cannot be the same")
     if nqbits <= 1: raise BaseException("nqbits cannot be less than 2")
-    if nqbits == 2: return CNOTGATEOLD(controlindex = controlindex, targetindex = targetindex)
-    t = mtensor(CNOTGATEOLD(controlindex = controlindex, targetindex = targetindex), CNOTGATE(nqbits - 1, controlindex= controlindex, targetindex=targetindex))
+    if nqbits == 2: return legacy_CNOTGATEOLD(controlindex = controlindex, targetindex = targetindex)
+    t = mtensor(legacy_CNOTGATEOLD(controlindex = controlindex, targetindex = targetindex), legacy_CNOTGATE(nqbits - 1, controlindex= controlindex, targetindex=targetindex))
     t.gateid = 'cnot' + str(controlindex)
     return t
 
-def CNOTR(controlbitindex : int = 0) -> Matrix:
+def legacy_CNOTR(controlbitindex : int = 0) -> Matrix:
     gate = Matrix(4, 4) * 0
     gate.gateid = 'cnotr'
 
@@ -547,7 +547,7 @@ def CNOTR(controlbitindex : int = 0) -> Matrix:
 
     return gate
 
-def FLIPPEDCNOTGATE(nqbits : int = 2) -> Matrix:
+def legacy_FLIPPEDCNOTGATE(nqbits : int = 2) -> Matrix:
     fcnot = Matrix(4, 4) * 0
     fcnot.rows[0][0] = comp(1, 0)
     fcnot.rows[1][3] = comp(1, 0)
@@ -557,9 +557,9 @@ def FLIPPEDCNOTGATE(nqbits : int = 2) -> Matrix:
     return fcnot
 
 
-def CNOT(qcontrol : list, qtarget : list) ->list:
+def legacy_CNOT(qcontrol : list, qtarget : list) ->list:
     tens = qtensor(qcontrol, qtarget)
-    result = CNOTGATE() ** tens
+    result = legacy_CNOTGATE() ** tens
     return result
 
 
@@ -569,7 +569,7 @@ def CNOT(qcontrol : list, qtarget : list) ->list:
 
 
 
-reprs = {
+legacy_reprs = {
     'r' : '[ R ]',
     'i' : '-----',
     'n' : '[ ~ ]',
@@ -588,8 +588,8 @@ reprs = {
 }
 
 
-def getrepr(gate : Matrix) -> str:
-    try : return reprs[gate.gateid]
+def legacy_getrepr(gate : Matrix) -> str:
+    try : return legacy_reprs[gate.gateid]
     except : 
         print(f"Gate represntation not found: {gate.gateid}")
         return '[ ! ]'
@@ -623,18 +623,18 @@ class qprogram(object):
         for each in range(len(self.gates)):
             for i in range(len(self.gates[each])):
                 if self.gates[each][i].gateid == 'cnot':
-                    pin = IGATE()
+                    pin = legacy_IGATE()
                     pin.gateid = 'pin'
                     self.gates[each - 1].insert(i, pin)
                 elif self.gates[each][i].gateid == 'fcnot':
-                    pin = IGATE()
+                    pin = legacy_IGATE()
                     pin.gateid = 'pin'
                     self.gates[each + 1].insert(i, pin)
         for each in range(len(self.gates)):
             if longest < len(self.gates[each]): longest = len(self.gates[each])
         
         for each in range(len(self.gates)):
-            self.gates[each] += [IGATE() for i in range(longest - len(self.gates[each]))]
+            self.gates[each] += [legacy_IGATE() for i in range(longest - len(self.gates[each]))]
         
         self.calcrepr()
         
@@ -709,8 +709,8 @@ class qprogram(object):
             for each in archways:
                 print(each.shape, end = ' ')
         
-        finalmat = Matrix(2 ** len(self.gates))
-        for each in archways:
+        finalmat = Matrix(pow(2, len(self.gates)), pow(2, len(self.gates)))
+        for each in archways[::-1]:
             finalmat = finalmat * each
         
         if verbose:
@@ -718,36 +718,39 @@ class qprogram(object):
         
         self.programmat = finalmat
 
-        self.newcalcrepr()
+        self.calcrepr()
 
         if showcompilationresult:
             print(self.repr)
             print(f"\nCompilation{(' of ' + self.name) if self.name is not None else ''} complete!\n")
 
-    def calcrepr(self):
+    def legacycalcrepr(self):
         string = f"\n{'' if self.name is None else self.name}"
         if self.name is not None: string += '\n'
         for each in range(self.nqbits):
             line = f"q{str(each)} ({self.qbits[each][1]}) ⮕ ---"
             for i in range(len(self.gates[each])):
-                line += getrepr(self.gates[each][i])
+                line += legacy_getrepr(self.gates[each][i])
                 line += "---"
             string += line + '\n'
         self.repr = string
     
-    def newcalcrepr(self):
+    def calcrepr(self):
         string = f"\n{'' if self.name is None else self.name}\n"
 
         reprs = [f'q{i}({self.qbits[i].index(1)}) ⮕  ---' for i in range(len(self.gates))]
 
-        for each in range(len(self.gates)):
-            for i in range(len(self.gates[each])):
+        for i in range(len(self.gates[0])):
+            for each in range(len(self.gates)):
                 gate = self.gates[each][i]
+                # print('o', gate.gateid)
                 if gate.gateid in ['i', 'm']:
                     reprs[each] += '--'
                     continue
-                if gate.span == 1: reprs[each] += f'[ {gate.gateid} ]'
+                if gate.span == 1: reprs[each] += f'--[ {gate.gateid} ]--'
                 else:
+                    ori = len(reprs[each])
+                    reprs[each] += ('-' * (len(max(reprs, key=len)) - ori))
                     ori = len(reprs[each])
                     reprs[each] += '⌈'
                     for _ in range(gate.span) : reprs[each] += f' {gate.gateid}'
