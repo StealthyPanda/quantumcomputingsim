@@ -34,6 +34,7 @@ class comp(object):
 
 
     def __eq__(self, o: object) -> bool:
+        if type(o) == int or type(o) == float: return ((self.a == o) and (self.b == 0))
         return ((self.a == o.a) and (self.b == o.b))
     
     def __repr__(self) -> str:
@@ -87,12 +88,19 @@ class Matrix(object):
                 if self.rows[each][i] != o.rows[each][i]: return False
         return True
 
-    def __init__(self, r : int, c : int):
-        self.nrows = r
-        self.ncols = c
-        self.gateid = None
-        self.rows = [[(comp(1) if i == x else comp()) for i in range(self.ncols)] for x in range(self.nrows)]
-        self.span = int(log(r, 2))
+    def __init__(self, r : int, c : int = -1, id : str = None):
+        if type(r) == list:
+            mat = r
+            self.nrows = len(mat)
+            self.ncols = len(mat[0])
+            self.rows = mat
+        else:
+            self.nrows = r
+            self.ncols = c if c > 0 else r
+            self.rows = [[(comp(1) if i == x else comp()) for i in range(self.ncols)] for x in range(self.nrows)]
+        self.gateid = id
+        self.span = int(log(self.nrows, 2))
+        self.shape = (self.nrows, self.ncols)
 
     def internaldot(a : list, b : list) -> float:
         assert len(a) == len(b)
@@ -196,6 +204,11 @@ class Matrix(object):
     
     def dagger(matrix):
         return matrix.conjugate().transpose()
+    
+    def getlist(self) -> list:
+        if self.shape[0] == 1: return self.rows[0]
+        elif self.shape[1] == 1: return self.transpose().rows[0]
+        else: print(f"Cannot meaningfully convert to list; at least 1 dimension must be 1; shape : {self.shape}")
 
 def mod(x, squared = False):
     if type(x) == type(comp(0, 0)):
@@ -203,10 +216,153 @@ def mod(x, squared = False):
     else:
         return (x if x >= 0 else (-1 * x)) if not squared else pow(x, 2)
 
-def qbit(bit : int) -> list:
+def qbit(bit : int = 0) -> list:
     return [0, 1] if bit else [1, 0]
 
 
+def qtensor(q1 : list, q2 : list) -> list:
+    tensorproduct = []
+    for each in q1:
+        for every in q2:
+            tensorproduct.append(comp(each) * comp(every))
+    return tensorproduct
+
+
+def mtensor(m1 : Matrix, m2 : Matrix) -> Matrix:
+    r = m1.nrows * m2.nrows
+    c = m1.ncols * m2.ncols
+    product = Matrix(r, c)
+
+    for each in range(m1.nrows):
+        for i in range(m1.ncols):
+            for x in range(m2.nrows):
+                for y in range(m2.ncols):
+                    product.rows[(m2.nrows * each) + x][(m2.ncols * i) + y] = comp(m1.rows[each][i]) * comp(m2.rows[x][y])
+    return product
+
+def MEASURE(tensor: list) -> list:
+    prev = 0
+    ranges = list( map( lambda x: mod(x, True), tensor ) )
+    m = random()
+    res = [0 for i in range(len(tensor))]
+    for each in range(len(tensor)):
+        ranges[each] += prev
+        prev = ranges[each]
+        if m <= ranges[each]:
+            res[each] = 1
+            return res
+    return res
+
+def printreal(matrix : Matrix) -> None:
+    thing = ""
+    for each in matrix.rows:
+        line = ""
+        for i in each: line +=(str(i.a) + ' ')
+        line += '\n'
+        thing += line
+    print(thing)
+
+def printimg(matrix : Matrix) -> None:
+    thing = ""
+    for each in matrix.rows:
+        line = ""
+        for i in each: line +=(str(i.b) + ' ')
+        line += '\n'
+        thing += line
+    print(thing)
+
+
+def plotmeasurement(measurement : list, binary = True, name : str = None) -> None:
+    eigenvectors = [('Ψ' + (('0' * (int(log(len(measurement), 2)) - len(str(bin(i))[2:]))) + str(bin(i))[2:])) for i in range(len(measurement))]
+    if not binary : eigenvectors = [('Ψ' + str(i)) for i in range(len(measurement))]
+    if mple:
+        plt.ylim(0, 100)
+        plt.bar(eigenvectors, measurement)
+        plt.xlabel("Eigenstates")
+        plt.ylabel("Percentage of outcomes")
+        if name is not None : plt.title(name)
+        plt.show()
+    else:
+        plotinterminal(measurement=measurement, binary= binary)
+
+def plotinterminal(measurement : list, binary = True, name : str = None) -> None:
+    eigenvectors = [('Ψ' + (('0' * (int(log(len(measurement), 2)) - len(str(bin(i))[2:]))) + str(bin(i))[2:])) for i in range(len(measurement))]
+    if not binary : eigenvectors = [('Ψ' + str(i)) for i in range(len(measurement))]
+    graph = f"\n{'' if name is None else name}"
+    if name is not None: graph += '\n'
+    for each in range(len(eigenvectors)):
+        graph += eigenvectors[each] + ' '
+        graph += ("█" * int(measurement[each] / 2))
+        if measurement[each] > 0: graph += (' ' + str(measurement[each]) + '%')
+        graph += '\n'
+    print(graph)
+    return graph
+
+def run(shots : int, state : list, binary : bool = True, graph : bool = False, terminal : bool = False, name : str = None) -> None:
+    sl = int(log(len(state), 2))
+    res = [0 for i in range(len(state))]
+    for each in range(shots):
+        measurement = MEASURE(state)
+        res[measurement.index(1)] += 1
+    ret = ""
+    for each in range(len(res)):
+        s = str(bin(each))[2:]
+        s = ('0' * (sl - len(s))) + s
+        s = int(int('0b'+ s, 2)) if not binary else s
+        ret += (f"|Ψ{s}> : {float(res[each]/shots) * 100}%, ")
+    ret = ret[:-2]
+    print(ret)
+    if graph:
+        if not terminal: plotmeasurement([((each/shots) * 100) for each in res], binary = binary, name = name)
+        else: plotinterminal([((each/shots) * 100) for each in res], binary = binary, name = name)
+
+def extract(measurement : list, qbitindex : int) -> list:
+    nqbits = int(log(len(measurement), 2))
+    index = bin(measurement.index(1))[2:]
+    index = ('0' * (nqbits - len(index))) + index
+    index = int(index[qbitindex])
+    return ([0, 1] if index else [1, 0])
+
+
+hgate = Matrix([
+    [comp(1),  comp(1)],
+    [comp(1), comp(-1)]
+], id = 'h') * pow(2, -0.5)
+
+igate = Matrix(2, id = 'i')
+
+cnot0 = Matrix(4, id = 'c0')
+cnot0.rows[2], cnot0.rows[3] = cnot0.rows[3], cnot0.rows[2]
+
+cnot1 = Matrix(4, id = 'c1')
+cnot1.rows[1], cnot1.rows[3] = cnot1.rows[3], cnot1.rows[1]
+
+xgate = Matrix([
+    [comp(), comp(1)],
+    [comp(1), comp()]
+], id = 'x')
+
+ygate = Matrix([
+    [comp(), comp(0, -1)],
+    [comp(0, 1), comp( )]
+], id = 'y')
+
+zgate = Matrix([
+    [comp(1), comp( )],
+    [comp(), comp(-1)]
+], id = 'z')
+
+tgate = Matrix([
+    [comp(1), comp()],
+    [comp(), comp.polar(1, pi/4)]
+], id = 't')
+
+swapgate = Matrix(4, id = 'swap')
+swapgate.rows[1], swapgate.rows[2] = swapgate.rows[2], swapgate.rows[1]
+
+mtensoridentity = Matrix([
+    [comp(1)]
+], id = 'm')
 
 def HGATE(m : int = 1) -> Matrix:
     if m == 0: return 1
@@ -330,21 +486,8 @@ def PHASEGATE(phase : float) -> Matrix:
     matrixgate.gateid = 'phase'
     return matrixgate
 
-def dagger(gate : Matrix) -> Matrix:
-    return gate.conjugate().transpose()
 
 
-def mtensor(m1 : Matrix, m2 : Matrix) -> Matrix:
-    r = m1.nrows * m2.nrows
-    c = m1.ncols * m2.ncols
-    product = Matrix(r, c)
-
-    for each in range(m1.nrows):
-        for i in range(m1.ncols):
-            for x in range(m2.nrows):
-                for y in range(m2.ncols):
-                    product.rows[(m2.nrows * each) + x][(m2.ncols * i) + y] = comp.getcomplex(m1.rows[each][i]) * comp.getcomplex(m2.rows[x][y])
-    return product
 
 
 class basischange:
@@ -361,46 +504,9 @@ class basischange:
                 retter = mtensor(self.transmat, retter)
             return retter
 
-def MEASURE(tensor: list) -> list:
-    prev = 0
-    ranges = list( map( lambda x: mod(x, True), tensor ) )
-    m = random()
-    res = [0 for i in range(len(tensor))]
-    for each in range(len(tensor)):
-        ranges[each] += prev
-        prev = ranges[each]
-        if m <= ranges[each]:
-            res[each] = 1
-            return res
-    return res
 
-def printreal(matrix : Matrix) -> None:
-    thing = ""
-    for each in matrix.rows:
-        line = ""
-        for i in each: line +=(str(i.a) + ' ')
-        line += '\n'
-        thing += line
-    print(thing)
 
-def printimg(matrix : Matrix) -> None:
-    thing = ""
-    for each in matrix.rows:
-        line = ""
-        for i in each: line +=(str(i.b) + ' ')
-        line += '\n'
-        thing += line
-    print(thing)
 
-def tensor(q1 : list, q2 : list) -> list:
-    tensorproduct = []
-    for each in q1:
-        for every in q2:
-            try:
-                tensorproduct.append(each * every)
-            except TypeError:
-                tensorproduct.append(every * each)
-    return tensorproduct
 
 def CNOTGATEOLD(controlindex : int = 0, targetindex : int = 1) -> Matrix:
     cg = Matrix(4, 4)
@@ -452,61 +558,15 @@ def FLIPPEDCNOTGATE(nqbits : int = 2) -> Matrix:
 
 
 def CNOT(qcontrol : list, qtarget : list) ->list:
-    tens = tensor(qcontrol, qtarget)
+    tens = qtensor(qcontrol, qtarget)
     result = CNOTGATE() ** tens
     return result
 
 
-def plotmeasurement(measurement : list, binary = True, name : str = None) -> None:
-    eigenvectors = [('Ψ' + (('0' * (int(log(len(measurement), 2)) - len(str(bin(i))[2:]))) + str(bin(i))[2:])) for i in range(len(measurement))]
-    if not binary : eigenvectors = [('Ψ' + str(i)) for i in range(len(measurement))]
-    if mple:
-        plt.ylim(0, 100)
-        plt.bar(eigenvectors, measurement)
-        plt.xlabel("Eigenstates")
-        plt.ylabel("Percentage of outcomes")
-        if name is not None : plt.title(name)
-        plt.show()
-    else:
-        plotinterminal(measurement=measurement, binary= binary)
 
-def plotinterminal(measurement : list, binary = True, name : str = None) -> None:
-    eigenvectors = [('Ψ' + (('0' * (int(log(len(measurement), 2)) - len(str(bin(i))[2:]))) + str(bin(i))[2:])) for i in range(len(measurement))]
-    if not binary : eigenvectors = [('Ψ' + str(i)) for i in range(len(measurement))]
-    graph = f"\n{'' if name is None else name}"
-    if name is not None: graph += '\n'
-    for each in range(len(eigenvectors)):
-        graph += eigenvectors[each] + ' '
-        graph += ("█" * int(measurement[each] / 2))
-        if measurement[each] > 0: graph += (' ' + str(measurement[each]) + '%')
-        graph += '\n'
-    print(graph)
-    return graph
 
-def run(shots : int, state : list, binary : bool = True, graph : bool = False, terminal : bool = False, name : str = None) -> None:
-    sl = int(log(len(state), 2))
-    res = [0 for i in range(len(state))]
-    for each in range(shots):
-        measurement = MEASURE(state)
-        res[measurement.index(1)] += 1
-    ret = ""
-    for each in range(len(res)):
-        s = str(bin(each))[2:]
-        s = ('0' * (sl - len(s))) + s
-        s = int(int('0b'+ s, 2)) if not binary else s
-        ret += (f"|Ψ{s}> : {float(res[each]/shots) * 100}%, ")
-    ret = ret[:-2]
-    print(ret)
-    if graph:
-        if not terminal: plotmeasurement([((each/shots) * 100) for each in res], binary = binary, name = name)
-        else: plotinterminal([((each/shots) * 100) for each in res], binary = binary, name = name)
 
-def extract(measurement : list, qbitindex : int) -> list:
-    nqbits = int(log(len(measurement), 2))
-    index = bin(measurement.index(1))[2:]
-    index = ('0' * (nqbits - len(index))) + index
-    index = int(index[qbitindex])
-    return ([0, 1] if index else [1, 0])
+
 
 
 reprs = {
@@ -543,15 +603,17 @@ class qprogram(object):
         self.bchange = bchange
         self.name = name
         self.repr = f"The program {'' if self.name is None else self.name} is yet to be compiled"
+        self.programmat = None
 
     def addgates(self, qbitindex : int, gates : list):
         self.cache = None
+        self.programmat = None
         self.gates[qbitindex] += gates
 
     def __repr__(self) -> str:
         return self.repr
 
-    def compile(self, verbose : bool = False, showcompilationresult : bool = True):
+    def legacycompile(self, verbose : bool = False, showcompilationresult : bool = True):
         if showcompilationresult : print(f"\nCompiling {'program' if self.name is None else self.name}...")
         longest = 0
         for each in range(len(self.gates)):
@@ -580,6 +642,81 @@ class qprogram(object):
 
         self.cache = None
         return self
+    
+    def compile(self, verbose : bool = False, showcompilationresult : bool = True, force : bool = False):
+        if showcompilationresult : print(f"\nCompiling {'program' if self.name is None else self.name}...")
+
+        if (self.programmat is not None) and (not force):
+            print("No changes in the program to recompile...")
+            return
+
+        longest = 0
+        for each in self.gates:
+            if len(each) > longest : longest = len(each)
+        if verbose : print("longest set of gates :",longest)
+        for each in range(len(self.gates)):
+            self.gates[each] += [igate for _ in range(longest - len(self.gates[each]))]
+
+        for each in range(len(self.gates)):
+            for i in range(len(self.gates[each])):
+                try:
+                    for x in range(self.gates[each][i].span - 1):
+                        x += 1
+                        if self.gates[each + x][i].gateid != 'm': self.gates[each + x].insert(i, mtensoridentity)
+                except IndexError:
+                    print(f"Invalid position ({each}, {i}) for gate ({self.gates[each][i].gateid}) of span {self.gates[each][i].span}\nAborting compilation...")
+                    return
+        
+        if verbose:
+            for each in self.gates:
+                for i in each:
+                    print(i.gateid, end=' ')
+                print()
+
+        longest = 0
+        for each in self.gates:
+            if len(each) > longest : longest = len(each)
+        if verbose : print("longest set of gates :",longest)
+        for each in range(len(self.gates)):
+            self.gates[each] += [igate for _ in range(longest - len(self.gates[each]))]        
+        
+        if verbose:
+            print()
+            for each in self.gates:
+                for i in each:
+                    print(i.gateid, end=' ')
+                print()
+        
+        archways = []
+        for each in range(longest):
+            allidentities = True
+            for i in range(len(self.gates)):
+                allidentities = allidentities and (self.gates[i][each].gateid == 'i')
+            if allidentities:
+                if verbose: print(f"Skipping tensor product at {each} due to all I gates...")
+                continue
+            prod = mtensoridentity
+            for i in range(len(self.gates)):
+                prod = mtensor(prod, self.gates[i][each])
+            archways.append(prod)
+        
+        if verbose:
+            print("Archway shapes: ", end = "")
+            for each in archways:
+                print(each.shape, end = ' ')
+        
+        finalmat = Matrix(2 ** len(self.gates))
+        for each in archways:
+            finalmat = finalmat * each
+        
+        if verbose:
+            print(f"\nFinal mat shape : {finalmat.shape}")
+        
+        self.programmat = finalmat
+
+        if showcompilationresult:
+            # print(self)
+            print(f"\nCompilation{(' of ' + self.name) if self.name is not None else ''} complete!\n")
 
     def calcrepr(self):
         string = f"\n{'' if self.name is None else self.name}"
@@ -599,7 +736,7 @@ class qprogram(object):
         length = len(self.gates[0])
 
         state = self.qbits[0]
-        for each in range(1, self.nqbits): state = tensor(state, self.qbits[each])
+        for each in range(1, self.nqbits): state = qtensor(state, self.qbits[each])
 
         for each in range(0, length):
             gates = []
@@ -626,9 +763,18 @@ class qprogram(object):
         return state
 
     def measure(self, verbose : bool = False, usecache : bool = True) -> list:
-        return MEASURE(self.getstate(verbose = verbose, usecache=usecache))
+        state = self.qbits[0]
+        for each in range(1, self.nqbits): state = qtensor(state, self.qbits[each])
+        state = (self.programmat * state).getlist()
+
+        return MEASURE(state)
     
-    def run(self, shots : int = 1600, verbose : bool = False, binary : bool  = True, graph : bool = False, usecache : bool = True, terminal : bool = False) -> None:
-        state = self.getstate(verbose = verbose, usecache=usecache)
-        
+    def run(self, shots : int = 1600, verbose : bool = False, binary : bool  = True, graph : bool = False, usecache : bool = True, terminal : bool = False, legacy : bool = False) -> None:
+        if legacy: state = self.getstate(verbose = verbose, usecache=usecache)
+        else:
+            state = self.qbits[0]
+            for each in range(1, self.nqbits): state = qtensor(state, self.qbits[each])
+
+            state = (self.programmat * state).getlist()
+
         run(shots, state, binary=binary, graph=graph, terminal=terminal, name = self.name)
