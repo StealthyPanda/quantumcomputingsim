@@ -571,7 +571,7 @@ def CNOT(qcontrol : list, qtarget : list) ->list:
 
 reprs = {
     'r' : '[ R ]',
-    'i' : '[ I ]',
+    'i' : '-----',
     'n' : '[ ~ ]',
     'x' : '[ X ]',
     'y' : '[ Y ]',
@@ -580,7 +580,11 @@ reprs = {
     'cnot' : '[ ⛒ ]',
     'fcnot' : '[ ⛒ ]',
     'phase' : '[ θ ]',
-    'pin' : '[ ☉ ]'
+    'pin' : '[ ☉ ]',
+    'c0' : '[ 0 ]',
+    'c1' : '[ 1 ]',
+    'm' :  '-----',
+    's' : '[ s ]'
 }
 
 
@@ -714,19 +718,58 @@ class qprogram(object):
         
         self.programmat = finalmat
 
+        self.newcalcrepr()
+
         if showcompilationresult:
-            # print(self)
+            print(self.repr)
             print(f"\nCompilation{(' of ' + self.name) if self.name is not None else ''} complete!\n")
 
     def calcrepr(self):
         string = f"\n{'' if self.name is None else self.name}"
         if self.name is not None: string += '\n'
         for each in range(self.nqbits):
-            line = f"q{str(each)} ({self.qbits[each][1]}) ⮕  ---"
+            line = f"q{str(each)} ({self.qbits[each][1]}) ⮕ ---"
             for i in range(len(self.gates[each])):
                 line += getrepr(self.gates[each][i])
                 line += "---"
             string += line + '\n'
+        self.repr = string
+    
+    def newcalcrepr(self):
+        string = f"\n{'' if self.name is None else self.name}\n"
+
+        reprs = [f'q{i}({self.qbits[i].index(1)}) ⮕  ---' for i in range(len(self.gates))]
+
+        for each in range(len(self.gates)):
+            for i in range(len(self.gates[each])):
+                gate = self.gates[each][i]
+                if gate.gateid in ['i', 'm']:
+                    reprs[each] += '--'
+                    continue
+                if gate.span == 1: reprs[each] += f'[ {gate.gateid} ]'
+                else:
+                    ori = len(reprs[each])
+                    reprs[each] += '⌈'
+                    for _ in range(gate.span) : reprs[each] += f' {gate.gateid}'
+                    reprs[each] += ' ⌉'
+                    for x in range(gate.span - 2):
+                        reprs[each + x + 1] += ('-' * (ori - len(reprs[each + x + 1])))
+                        reprs[each + x + 1] += '|'
+                        for _ in range(gate.span) : reprs[each + x + 1] += f' {gate.gateid}'
+                        reprs[each + x + 1] += ' |'
+                    reprs[each + gate.span - 1] += ('-' * (ori - len(reprs[each + gate.span - 1])))
+                    reprs[each + gate.span - 1] += '⌊'
+                    for _ in range(gate.span) : reprs[each + gate.span - 1] += f' {gate.gateid}'
+                    reprs[each + gate.span - 1] += ' ⌋'
+
+        longest = 0
+        for each in reprs:
+            if len(each) > longest: longest = len(each)
+
+        for each in reprs:
+            string += each
+            string += ('-' * (longest - len(each)))
+            string += '---\n'
         self.repr = string
     
     def getstate(self, verbose : bool = False, usecache : bool = True) -> list:

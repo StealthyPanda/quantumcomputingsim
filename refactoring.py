@@ -46,12 +46,12 @@ b = Matrix([
 
 qprog = qprogram(3, name='refactor testing')
 
-something = Matrix(8, 8, id = 's')
+something = Matrix(8, 8, id = 'spagett')
 
 qprog.addgates(0, [something])
-qprog.addgates(1, [igate, cnot1])
-qprog.addgates(2, [igate, hgate])
+qprog.addgates(1, [cnot1])
+qprog.addgates(2, [hgate])
 
 qprog.compile()
 
-qprog.run(graph = True)
+qprog.run()
