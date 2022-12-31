@@ -2,8 +2,8 @@ from quantum import *
 
 rps = qprogram(2)
 
-rps.addgates(0, [HGATE(), RGATE(pi/3.3)])
-rps.addgates(1, [IGATE(), CNOTGATE(), IGATE()])
+rps.addgates(0, [hgate, cnot0, rgate(pi/3.3)])
+rps.addgates(1, [igate])
 
 rps.compile(showcompilationresult = False)
 

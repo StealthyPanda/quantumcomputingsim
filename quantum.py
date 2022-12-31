@@ -375,6 +375,15 @@ mtensoridentity = Matrix([
 toffoligate = Matrix(8, id = 'tof')
 toffoligate.rows[6], toffoligate.rows[7] = toffoligate.rows[7], toffoligate.rows[6]
 
+def rgate(angle : float) -> Matrix:
+    matrix = Matrix(2)
+    matrix.rows[0][0] = comp(sin(angle), 0)
+    matrix.rows[0][1] = comp(cos(angle), 0)
+    matrix.rows[1][0] = comp(cos(angle), 0)
+    matrix.rows[1][1] = comp(-sin(angle), 0)
+    matrix.gateid = f'r({angle})'
+    return matrix
+
 def legacy_HGATE(m : int = 1) -> Matrix:
     if m == 0: return 1
     inner = legacy_HGATE(m-1)
