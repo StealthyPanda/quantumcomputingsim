@@ -840,7 +840,7 @@ class qprogram(object):
 
 class Block(qprogram):
     def __init__(self, nqbits: int, blockid: str, custom: list = None, bchange: basischange = None) -> None:
-        self.blockid = blockid
+        self.gateid = blockid
         super().__init__(nqbits, custom, bchange, f"{blockid}_block")
     
     def __repr__(self) -> str:
@@ -849,7 +849,6 @@ class Block(qprogram):
 
     def compile(self, verbose: bool = False, showcompilationresult: bool = True):
         super().compile(verbose, showcompilationresult)
-        self.gateid = self.blockid
         self.span = self.programmat.span
         self.shape = self.programmat.shape
         self.ncols = self.programmat.ncols
@@ -861,3 +860,14 @@ class Block(qprogram):
         blockmat = self.programmat
         blockmat.gateid = self.blockid
         return blockmat
+
+def controlledU(u : Matrix) -> Matrix:
+    cu = Matrix(pow(2, u.span + 1), id = f"C_{u.gateid}")
+    
+    start = pow(2, u.span)
+
+    for each in range(start):
+        for i in range(start):
+            cu.rows[each + start][i + start] = u.rows[each][i]
+
+    return cu
