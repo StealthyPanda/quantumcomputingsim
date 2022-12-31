@@ -1,4 +1,3 @@
-# a qbit is [a, b] where a and b are complex numbers
 from math import atan, pi, log, cos, sin
 from random import random
 from typing import Type
@@ -13,7 +12,6 @@ except ModuleNotFoundError:
 
 
 PI = pi
-pi = pi
 
 class comp(object):
     def __init__(self, a : float = 0, b : float = 0):
@@ -323,6 +321,16 @@ def extract(measurement : list, qbitindex : int) -> list:
     index = int(index[qbitindex])
     return ([0, 1] if index else [1, 0])
 
+def validgate(gate : Matrix) -> bool:
+    """
+    This aint working for some reason dont use it
+    """
+    print((gate.nrows == gate.ncols))
+    print((gate * gate) == Matrix(gate.nrows))
+    return (
+        (gate.nrows == gate.ncols) and ((gate * gate) == Matrix(gate.nrows))
+    )
+
 
 hgate = Matrix([
     [comp(1),  comp(1)],
@@ -363,6 +371,9 @@ swapgate.rows[1], swapgate.rows[2] = swapgate.rows[2], swapgate.rows[1]
 mtensoridentity = Matrix([
     [comp(1)]
 ], id = 'm')
+
+toffoligate = Matrix(8, id = 'tof')
+toffoligate.rows[6], toffoligate.rows[7] = toffoligate.rows[7], toffoligate.rows[6]
 
 def legacy_HGATE(m : int = 1) -> Matrix:
     if m == 0: return 1
@@ -606,7 +617,7 @@ class qprogram(object):
         self.gates = [[] for i in range(nqbits)]
         self.bchange = bchange
         self.name = name
-        self.repr = f"The program {'' if self.name is None else self.name} is yet to be compiled"
+        self.repr = None
         self.programmat = None
 
     def addgates(self, qbitindex : int, gates : list):
@@ -615,6 +626,7 @@ class qprogram(object):
         self.gates[qbitindex] += gates
 
     def __repr__(self) -> str:
+        if self.repr is None : return f"The program {'' if self.name is None else self.name} is yet to be compiled"
         return self.repr
 
     def legacycompile(self, verbose : bool = False, showcompilationresult : bool = True):
@@ -647,12 +659,12 @@ class qprogram(object):
         self.cache = None
         return self
     
-    def compile(self, verbose : bool = False, showcompilationresult : bool = True, force : bool = False):
+    def compile(self, verbose : bool = False, showcompilationresult : bool = True):
         if showcompilationresult : print(f"\nCompiling {'program' if self.name is None else self.name}...")
 
-        if (self.programmat is not None) and (not force):
-            print("No changes in the program to recompile...")
-            return
+        for each in self.gates:
+            for i in each:
+                if type(i) == Block : i.compile(showcompilationresult = False)
 
         longest = 0
         for each in self.gates:
@@ -824,3 +836,28 @@ class qprogram(object):
             state = (self.programmat * state).getlist()
 
         run(shots, state, binary=binary, graph=graph, terminal=terminal, name = self.name)
+
+
+class Block(qprogram):
+    def __init__(self, nqbits: int, blockid: str, custom: list = None, bchange: basischange = None) -> None:
+        self.blockid = blockid
+        super().__init__(nqbits, custom, bchange, f"{blockid}_block")
+    
+    def __repr__(self) -> str:
+        if self.repr is None : self.compile(showcompilationresult = False)
+        return self.repr
+
+    def compile(self, verbose: bool = False, showcompilationresult: bool = True):
+        super().compile(verbose, showcompilationresult)
+        self.gateid = self.blockid
+        self.span = self.programmat.span
+        self.shape = self.programmat.shape
+        self.ncols = self.programmat.ncols
+        self.nrows = self.programmat.nrows
+        self.rows = self.programmat.rows
+    
+    def getmat(self) -> Matrix:
+        if self.programmat is None: self.compile()
+        blockmat = self.programmat
+        blockmat.gateid = self.blockid
+        return blockmat

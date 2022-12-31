@@ -1,65 +1,16 @@
 from quantum import *
 
-# mat = Matrix(3, 3)
-
-# mat.rows[0][0] = comp(1)
-# mat.rows[1][0] = comp(1)
-# mat.rows[2][0] = comp(1)
 
 
-# mat.rows[0][1] = comp(2)
-# mat.rows[1][1] = comp(3)
-# mat.rows[2][1] = comp(4)
+bell = Block(2, 'B')
+bell.addgates(0, [hgate, cnot0])
+bell = bell.getmat()
 
 
-# mat.rows[0][2] = comp(4)
-# mat.rows[1][2] = comp(9)
-# mat.rows[2][2] = comp(16)
+q = qprogram(2)
 
-# # a = Matrix(2, 3)
-# a = Matrix([
-#     [comp(1), comp(2), comp(3)],
-#     [comp(4), comp(5), 6]
-# ])
+q.addgates(0, [bell, bell, bell, bell, bell, bell, bell, bell])
 
-# # b = Matrix(3, 2)
-b = Matrix([
-    [comp(1), 2],
-    [comp(3), comp(4)],
-    [comp(4), comp(5)]
-])
+q.compile()
 
-# c = [2, 3]
-# d = [comp(0, 1), comp(2)]
-
-# m = mtensor(a, b)
-# print(m, m.shape)
-# print(a)
-# print(type(pow(-1, 0.5)))
-# print(MEASURE([pow(2, -0.5), 0, pow(2, -0.5), 0]))
-# run(
-#     500, [pow(2, -0.5), 0, pow(2, -0.5), 0], graph = True
-# )
-# print(b)
-# print()
-# print(mtensor(b, Matrix([[1]])))
-
-qprog = qprogram(3, name='refactor testing')
-
-something = Matrix(8, 8, id = 's')
-
-qprog.addgates(0, [igate, something])
-qprog.addgates(1, [hgate])
-# qprog.addgates(2, [])
-
-qprog.compile()
-
-qprog.run()
-
-# print(mtensor(hgate, igate))
-# print()
-# print(cnot0)
-# print()
-# print(mtensor(hgate, igate) * cnot0)
-# print()
-# print((mtensor(hgate, igate) * cnot0) * [1, 0, 0, 0])
+q.run(graph = True)
