@@ -22,7 +22,9 @@ class comp(object):
     def __init__(self, a : float = 0, b : float = 0):
         """
         Defines a complex number z = a + ib
+        
         To define a complex number in polar form, use comp.polar().
+        
         If `a` is of type comp, it simply defines a new identical complex number.
         """
         if type(a) == comp:
@@ -39,6 +41,7 @@ class comp(object):
     def polar(r : float, theta : float):
         """
         Returns a comp in the given polar coordinates.
+        
         Theta is measured in radians; use quantum.pi or Pi or PI for π
         """
         return comp(r * cos(theta), r * sin(theta))
@@ -63,6 +66,7 @@ class comp(object):
     def getcomplex(number : object or float or int):
         """
         Returns the comp form of whatever is passed in as input.
+        
         If input is comp, the SAME object is returned (as opposed to comp(z), which gives a copy).
         """
         if type(number) == comp: return number
@@ -103,9 +107,12 @@ class comp(object):
 class Matrix(object):
     """
     Matrix of 2 dimensions with entries of type comp or float or int.
+    
     A matrix on its own is a valid quantum gate that can be added to a qprogram via qprogram.addgates().
 
+    
     Matrix.shape is the order of the matrix.
+    
     Matrix.span is number of qbits the gate is supposed to input and output.
     """
 
@@ -271,6 +278,7 @@ class Matrix(object):
 def mod(x, squared = False) -> float:
     """
     Returns the mod value of x.
+    
     If squared is True, returns the square of the mod value.
     """
     if type(x) == type(comp(0, 0)):
@@ -281,6 +289,7 @@ def mod(x, squared = False) -> float:
 def qbit(bit : int = 0) -> List[int]:
     """
     Returns a Qubit set to value bit.
+    
     Qubit 0 is [1, 0], and 1 is [0, 1].
     """
     return [0, 1] if bit else [1, 0]
@@ -315,7 +324,9 @@ def mtensor(m1 : Matrix, m2 : Matrix) -> Matrix:
 def MEASURE(tensor: List[int or float or comp]) -> List[int]:
     """
     Performs a measurement on a system of qubits.
+    
     `tensor` is a tensor in list form that represents the state of the system.
+    
     Returns a sparse list with result of measurement.
     """
     prev = 0
@@ -358,8 +369,11 @@ def printimg(matrix : Matrix) -> None:
 def plotmeasurement(measurement : list, binary = True, name : str = None) -> None:
     """
     Plots the measurement result graphically.
+    
     `name` is the title for the graph.
+    
     `binary` controls if the states are represented in binary or decimal.
+    
     If matplotlib has not been installed, the terminal will automatically be used for plotting.
     """
     eigenvectors = [('Ψ' + (('0' * (int(log(len(measurement), 2)) - len(str(bin(i))[2:]))) + str(bin(i))[2:])) for i in range(len(measurement))]
@@ -377,7 +391,9 @@ def plotmeasurement(measurement : list, binary = True, name : str = None) -> Non
 def plotinterminal(measurement : list, binary = True, name : str = None) -> None:
     """
     Plots the measurement result graphically in terminal.
+    
     `name` is the title for the graph.
+    
     `binary` controls if the states are represented in binary or decimal.
     """
     eigenvectors = [('Ψ' + (('0' * (int(log(len(measurement), 2)) - len(str(bin(i))[2:]))) + str(bin(i))[2:])) for i in range(len(measurement))]
@@ -395,7 +411,9 @@ def plotinterminal(measurement : list, binary = True, name : str = None) -> None
 def run(shots : int, state : List[int or float or comp], binary : bool = True, graph : bool = False, terminal : bool = False, name : str = None) -> None:
     """
     Runs measurements on a state of the system.
+    
     The state is measured `shots` number of times, and percentages of each outcome is recorded.
+    
     If `graph` is set to True, the result is also plotted graphically.
     """
     
@@ -419,6 +437,7 @@ def run(shots : int, state : List[int or float or comp], binary : bool = True, g
 def extract(measurement : List[int], qbitindex : int) -> List[int]:
     """
     Returns the state of Qubit at index `qbitindex` in `measurement`.
+    
     NOTE: returns qubits in list form ([0, 1] or [1, 0]).
     """
     nqbits = int(log(len(measurement), 2))
@@ -486,9 +505,12 @@ def RGATE(angle : float) -> Matrix:
     """
     Returns a matrix of the form:
 
+    
     [ sin(angle)   cos(angle) ]
+    
     [ cos(angle)  -sin(angle) ]
 
+    
     `angle` is in radians.
     """
     matrix = Matrix(2)
@@ -503,11 +525,13 @@ def RGATE(angle : float) -> Matrix:
 class basischange:
     """
     A class for dealing with basis change.
+    
     Instance of this object can be passed into qprogram for changing the basis.
     """
     def __init__(self, transformationmatrix : Matrix) -> None:
         """
         Transformation matrix is the matrix for changing basis of the system.
+        
         Must be a 2x2 matrix.
         """
         r, c = transformationmatrix.nrows, transformationmatrix.ncols
@@ -538,8 +562,11 @@ class qprogram(object):
     Example:
     `
     entangler = qprogram(2, name = 'quantum entanglement')
+    
     entangler.addgates(0, [HGATE, CNOT0])
+    
     entangler.compile()
+    
     entangler.run(graph = True)
     `
 
@@ -548,8 +575,11 @@ class qprogram(object):
     def __init__(self, nqbits : int, custom : list = None, bchange : basischange = None, name : str = None) -> None:
         """
         `nqbits` -> no. of qubits in the system.
+        
         `custom` -> a list of integers that sets the initial state of each of the qubits (by default 0 for all).
+        
         `bchange` -> a BasisChange object for changing the basis.
+        
         `name` -> name of the Quantum program.
         """
         self.qbits = []
@@ -570,6 +600,7 @@ class qprogram(object):
         Adds gates to the qprogram.
 
         `qbitindex` is the index of the bit to which gates are added.
+        
         `gates` is a list containing the sequence of gates to be added.
         """
         self.cache = None
@@ -598,7 +629,9 @@ class qprogram(object):
         """
         Compiles the qprogram. This step is necessary before running the qprogram, and everytime the circuit-gate diagram is changed.
 
+
         If `verbose`, debug info is showed as well.
+        
         If `showcompilationresult`, the final block diagram of the program is displayed.
         """
 
@@ -738,9 +771,13 @@ class qprogram(object):
         """
         Runs and records the outcome of the qprogram.
 
+
         `shots` -> No. of times the measurement of the final state of the system is repeated.
+        
         `binary` -> Format of the numeric states displayed in the output.
+
         `graph` -> If set to True, the output of the qprogram is plotted graphically. May use matplotlib if installed.
+
         `terminal` -> Force all the output (including graphs) to be displayed only on the terminal window.
         """
         
@@ -801,8 +838,7 @@ class Block(qprogram):
 
 def controlledU(u : Matrix) -> Matrix:
     """
-    Returns the controlled version of gate U, assuming the top qubit (q0) is the control qubit and U is applied on the
-    subsequent set of qubits.
+    Returns the controlled version of gate U, assuming the top qubit (q0) is the control qubit and U is applied on the subsequent set of qubits.
     """
     cu = Matrix(pow(2, u.span + 1), id = f"C_{u.gateid}")
     
