@@ -1,9 +1,12 @@
+#An implmementation of rock paper scissors using a quantum program
+
+
 from quantum import *
 
 rps = qprogram(2)
 
-rps.addgates(0, [HGATE(), RGATE(pi/3.3)])
-rps.addgates(1, [IGATE(), CNOTGATE(), IGATE()])
+rps.addgates(0, [HGATE, CNOT0, RGATE(pi/3.3)])
+rps.addgates(1, [IGATE])
 
 rps.compile(showcompilationresult = False)
 

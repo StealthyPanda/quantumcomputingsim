@@ -1,7 +1,6 @@
-# a qbit is [a, b] where a and b are complex numbers
 from math import atan, pi, log, cos, sin
 from random import random
-from typing import Type
+from typing import List, Tuple
 from copy import deepcopy
 mple = True
 
@@ -13,58 +12,109 @@ except ModuleNotFoundError:
 
 
 PI = pi
-pi = pi
+Pi = pi
+
 
 class comp(object):
-    def __init__(self, a : float, b: float):
-        self.a = a
-        self.b = b
-        self.r = pow(( pow(a, 2) + pow(b, 2) ), 0.5)
+    """
+    Class for dealing with complex numbers.
+    """
+    def __init__(self, a : float = 0, b : float = 0):
+        """
+        Defines a complex number z = a + ib
+        
+        To define a complex number in polar form, use comp.polar().
+        
+        If `a` is of type comp, it simply defines a new identical complex number.
+        """
+        if type(a) == comp:
+            self.a, self.b = a.a, a.b
+        else:
+            self.a = a
+            self.b = b
+        self.r = pow(( pow(self.a, 2) + pow(self.b, 2) ), 0.5)
         try:
-            self.theta = atan((b/a))
+            self.theta = atan((self.b/self.a))
         except ZeroDivisionError:
             self.theta = pi/2 * (1 if self.b >= 0 else -1)
 
     def polar(r : float, theta : float):
+        """
+        Returns a comp in the given polar coordinates.
+        
+        Theta is measured in radians; use quantum.pi or Pi or PI for π
+        """
         return comp(r * cos(theta), r * sin(theta))
 
 
     def __eq__(self, o: object) -> bool:
+        if type(o) == int or type(o) == float: return ((self.a == o) and (self.b == 0))
         return ((self.a == o.a) and (self.b == o.b))
     
     def __repr__(self) -> str:
         return ("%.2f %s i%.2f" % (self.a, "+" if self.b >= 0 else "-", self.b if self.b >= 0 else (-1 * self.b)))
     
-    def __add__(self, other):
+    def __add__(self, other : object):
         return comp(self.a + other.a, self.b + other.b)
     
-    def __pow__(self, p):
-        power = comp(1, 0)
-        for each in range(p):
-            power = power * self
-        return power
+    def __pow__(self, p : float):
+        return comp.polar( pow(self.r, p) , self.theta * p)
     
-    def getcomplex(number : any):
-        if type(number) == type(comp(1, 0)): return number
-        return comp(number, 0)
+    def __sub__(self, other : object):
+        return (self + (other * -1))
 
-    def __mul__(self, other):
-        return comp((self.a * other.a) - (self.b * other.b), (self.a * other.b) + (self.b * other.a))
+    def getcomplex(number : object or float or int):
+        """
+        Returns the comp form of whatever is passed in as input.
+        
+        If input is comp, the SAME object is returned (as opposed to comp(z), which gives a copy).
+        """
+        if type(number) == comp: return number
+        return comp(number)
+
+
+    def __truediv__(self, other : object or float or int):
+        assert (
+            (type(other) == comp) or (type(other) == float) or (type(other) == int)
+        ), f"Comp cannot be divided by a {type(other)}!"
+        if type(other) == comp:
+            return (self * other.inverse())
+        else:
+            return comp(self.a/other, self.b/other)
+
+    def __mul__(self, other : object or float or int):
+        assert (
+            (type(other) == comp) or (type(other) == float) or (type(other) == int)
+        ), f"Comp cannot be multiplied with a {type(other)}!"
+        if type(other) == comp:
+            return comp((self.a * other.a) - (self.b * other.b), (self.a * other.b) + (self.b * other.a))
+        else:
+            return comp(self.a * other, self.b * other)
     
-    def hack(self, other):
-        return comp((self.a * other.a) - (self.b * other.b), (self.a * other.b) + (self.b * other.a))
-
-    def __mul__(self, real : float):
-        try:
-            return comp(self.a * real, self.b * real)
-        except TypeError:
-            return self.hack(real)
+    def inverse(self):
+        """
+        Returns (1/z).
+        """
+        return comp( self.a/pow(self.r, 2) , (-self.b)/pow(self.r, 2))
     
     def conjugate(self):
+        """
+        Returns z̄.
+        """
         conj = comp(self.a, (-1 * self.b))
         return conj
 
 class Matrix(object):
+    """
+    Matrix of 2 dimensions with entries of type comp or float or int.
+    
+    A matrix on its own is a valid quantum gate that can be added to a qprogram via qprogram.addgates().
+
+    
+    Matrix.shape is the order of the matrix.
+    
+    Matrix.span is number of qbits the gate is supposed to input and output.
+    """
 
     def __eq__(self, o: object) -> bool:
         if (self.nrows != o.nrows) or (self.ncols != o.ncols): return False
@@ -73,28 +123,131 @@ class Matrix(object):
                 if self.rows[each][i] != o.rows[each][i]: return False
         return True
 
-    def __init__(self, r : int, c : int):
-        self.nrows = r
-        self.ncols = c
-        self.gateid = None
-        self.rows = [[comp(1, 0) for i in range(self.ncols)] for x in range(self.nrows)]
+    def __init__(self, r : int, c : int = -1, id : str = None):
+        """
+        Matrix(integer) returns a integer x integer Identity matrix.
+        
+        Matrix(a, b) returns a matrix of order a x b.
+        
+        Matrix(List[List[float or int or comp]]) converts a 2D matrix from list form to Matrix type.
 
-    def __pow__(self, vector : list):
-        prod = []
-        for each in range(self.nrows):
-            dot = comp(0, 0)
-            for i in range(self.ncols):
-                dot += self.rows[each][i] * vector[i]
-            prod.append(dot)
-        return prod
+        `id` is the gateid of the quantum gate (preferably 1 or a few chars at most).
+        """
+        if type(r) == list:
+            assert r != [], "Empty list cannot be converted to a matrix."
+            mat = r
+            self.nrows = len(mat)
+            self.ncols = len(mat[0])
+            self.rows = mat
+        else:
+            self.nrows = r
+            self.ncols = c if c > 0 else r
+            self.rows = [[(comp(1) if i == x else comp()) for i in range(self.ncols)] for x in range(self.nrows)]
+        self.gateid = id
+        self.span = int(log(self.nrows, 2))
+        self.shape = (self.nrows, self.ncols)
 
-    def __mul__(self, scalar : float):
-        prod = Matrix(self.nrows, self.ncols)
-        for each in range(self.nrows):
-            for i in range(self.ncols):
-                prod.rows[each][i]  = self.rows[each][i] * scalar
-        return prod
+    def internaldot(a : list, b : list) -> float:
+        assert len(a) == len(b)
+        d = comp()
+        for each in range(len(a)):
+            d += (comp.getcomplex(a[each]) * b[each])
+        return d
     
+    def __add__(self, other : object):
+        assert (self.nrows == other.nrows) and (self.ncols == other.ncols), f"Matrices must be of same order; found {self.nrows}x{self.ncols} and {other.nrows}x{other.ncols}."
+        summ = Matrix(self.nrows, self.ncols, f'{self.gateid}+{other.gateid}')
+
+        for each in range(self.nrows):
+            for i in range(self.ncols):
+                summ.rows[each][i] = self.rows[each][i] + other.rows[each][i]
+        
+        return summ
+
+    def __sub__(self, other : object):
+        return (self + (other * -1))
+
+    def __mul__(self, other : object or list or float or int or comp):
+        assert (
+            (type(other) == Matrix) or (type(other) == list) or (type(other) == int) or (type(other) == comp) or (type(other) == float)
+        ), f"Matrix cannot be multiplied by a {type(other)}!"
+        if type(other) == Matrix:
+            assert self.ncols == other.nrows, f"Dimensions of matrices don't match: {self.nrows}x{self.ncols} and {other.nrows}x{other.ncols}"
+            product = Matrix(self.nrows, other.ncols)
+            ot = other.transpose()
+            for each in range(self.nrows):
+                for i in range(other.ncols):
+                    product.rows[each][i] = Matrix.internaldot(self.rows[each], ot.rows[i])
+            return product
+        elif type(other) == list:
+            buffer = Matrix(1, len(other))
+            buffer.rows[0] = other
+            buffer = buffer.transpose()
+            return (self * buffer)
+        else:
+            product = deepcopy(self)
+            for each in range(product.nrows):
+                for i in range(product.ncols):
+                    product.rows[each][i] = product.rows[each][i] * other
+            return product
+    
+    def __truediv__(self, other : float or int or comp):
+        assert (
+            (type(other) == int) or (type(other) == comp) or (type(other) == float)
+        ), f"Matrix cannot be divided by a {type(other)}!"
+        if type(other) == comp: return(self * other.inverse())
+        return (self * (1/other))
+    
+    def determinant(matrix) -> float or comp:
+        """
+        Returns the determinant of this matrix.
+        """
+        assert matrix.nrows == matrix.ncols, f"Matrix must a square matrix; got dimensions {matrix.nrows}x{matrix.ncols}"
+        if matrix.ncols == 1: return matrix.rows[0][0]
+        if matrix.ncols == 2:
+            return (matrix.rows[0][0] * matrix.rows[1][1]) - (matrix.rows[0][1] * matrix.rows[1][0])
+        det = comp()
+        for each in range(matrix.ncols):
+            subdet = matrix.rows[0][each] * ((-1)**each)
+            submat = [x[:each] + x[each + 1:] for x in matrix.rows[1:]]
+            submatrix = Matrix(len(submat), len(submat[0]))
+            submatrix.rows = submat
+            # print(f'submatrix{each}\n', submatrix, '\n\n')
+            subdet *= Matrix.determinant(submatrix)
+            det += subdet
+        return det
+
+    def adjoint(matrix):
+        """
+        Returns the adjoint of this matrix.
+        """
+        assert matrix.nrows == matrix.ncols, f"Matrix must a square matrix; got dimensions {matrix.nrows}x{matrix.ncols}"
+        adj = deepcopy(matrix)
+        if matrix.nrows == 2:
+            adj.rows[0][0] = matrix.rows[1][1]
+            adj.rows[0][1] = matrix.rows[1][0] * -1
+            adj.rows[1][0] = matrix.rows[0][1] * -1
+            adj.rows[1][1] = matrix.rows[0][0]
+            return adj.transpose()
+        for each in range(adj.nrows):
+            for i in range(adj.ncols):
+                submat = [x[:i] + x[i + 1:] for x in (matrix.rows[:each] + matrix.rows[each + 1:])]
+                submatrix = Matrix(len(submat), len(submat[0]))
+                submatrix.rows = submat
+                print(f"submatrix{each},{i}:")
+                print(submatrix)
+                print()
+                adj.rows[each][i] = submatrix.determinant() * ((-1) ** (each + i))
+        adj = adj.transpose()
+        return adj
+    
+    def inverse(self):
+        """
+        Returns the inverse of this matrix.
+        """
+        return (self.adjoint() / self.determinant())
+
+
     def __repr__(self) -> str:
         string = ""
         for each in self.rows:
@@ -102,6 +255,9 @@ class Matrix(object):
         return string.strip()
     
     def transpose(self):
+        """
+        Returns the transpose of this matrix.
+        """
         trans = Matrix(self.ncols, self.nrows)
         for r in range(trans.nrows):
             for c in range(trans.ncols):
@@ -109,150 +265,64 @@ class Matrix(object):
         return trans
     
     def conjugate(self):
+        """
+        Returns the elementwise conjugate of the matrix.
+        """
         conj = Matrix(self.nrows, self.ncols)
         for r in range(conj.nrows):
             for c in range(conj.ncols):
                 conj.rows[r][c] = self.rows[r][c].conjugate()
         return conj
+    
+    def dagger(matrix):
+        """
+        Returns the conjugate of the matrix.
+        """
+        return matrix.conjugate().transpose()
+    
+    def getlist(self) -> list:
+        """
+        If the matrix is a column or row matrix, returns a list form of the matrix.
+        """
+        if self.shape[0] == 1: return self.rows[0]
+        elif self.shape[1] == 1: return self.transpose().rows[0]
+        else: print(f"Cannot meaningfully convert to list; at least 1 dimension must be 1; shape : {self.shape}")
 
-def mod(x, squared = False):
+def mod(x, squared = False) -> float:
+    """
+    Returns the mod value of x.
+    
+    If squared is True, returns the square of the mod value.
+    """
     if type(x) == type(comp(0, 0)):
         return pow(x.r, 2) if squared else x.r
     else:
         return (x if x >= 0 else (-1 * x)) if not squared else pow(x, 2)
 
-def qbit(bit : int) -> list:
+def qbit(bit : int = 0) -> List[int]:
+    """
+    Returns a Qubit set to value bit.
+    
+    Qubit 0 is [1, 0], and 1 is [0, 1].
+    """
     return [0, 1] if bit else [1, 0]
 
 
-
-def HGATE(m : int = 1) -> Matrix:
-    if m == 0: return 1
-    inner = HGATE(m-1)
-    matrix = Matrix(int(pow(2, m)), int(pow(2, m)))
-    matrix.gateid = 'h'
-    if m == 1:
-        matrix = matrix * (1/pow(2, 0.5))
-        matrix.rows[-1][-1] =  matrix.rows[-1][-1] * -1
-        matrix.gateid = 'h'
-        return matrix
-    for each in range(int(pow(2, m))):
-        for i in range(int(pow(2, m))):
-            matrix.rows[each][i] = inner.rows[each % int(pow(2, m-1))][i % int(pow(2, m-1))]
-            if (pow(2, m-1) <= each) and (pow(2, m-1) <= i): matrix.rows[each][i] *= -1
-    matrix = matrix * (1/pow(2, 0.5))
-    matrix.gateid = 'h'
-    return matrix
-
-def NGATE(n : int = 1) -> Matrix:
-    gate = Matrix(pow(2, n), pow(2, n))
-    gate = gate * 0
-    # buffer = Matrix(pow(2, n), pow(2, n))
-    for each in range(pow(2, n)):
-        for i in range(pow(2, n)):
-            if (each + i) == (pow(2, n) - 1): gate.rows[each][i] = comp(1, 0)
-    gate.gateid = 'n'
-    return gate
-
-def IGATE(n : int = 1) -> Matrix:
-    gate = Matrix(pow(2, n), pow(2, n))
-    gate = gate * 0
-    for each in range(pow(2, n)):
-        for i in range(pow(2, n)):
-            if each == i:
-                gate.rows[each][i] = comp(1, 0)
-    gate.gateid = 'i'
-    return gate
-
-def SETTOGATE(value : int, n : int = 1):
-    if n == 1:
-        matrix = Matrix(2, 2) * 0
-        matrix.rows[value][0] = comp(1, 0)
-        matrix.rows[value][1] = comp(1, 0)
-        return matrix
-    else:
-        return mtensor(SETTOGATE(value = value), SETTOGATE(value = value, n =  n - 1))
-
-def NOT(qbit: list) -> list:
-    return (NGATE(int(log(len(qbit), 2))) ** qbit)
-
-def IDEN(qbit : list) -> list:
-    return qbit
-
-def HAD(qbit : list) -> list:
-    # print(qbit)
-    return HGATE(int(log(len(qbit), 2))) ** qbit
-
-def FLIP(state: list) -> list:
-    flipped = []
-    for each in state:
-        each = comp.getcomplex(each)
-        each.b *= -1
-        flipped.append(each)
-    return flipped
-
-def flipgate(gate : Matrix) -> Matrix:
-    flipped = Matrix(gate.nrows, gate.ncols)
-    flipped.gateid = gate.gateid
-    flipped.rows = deepcopy(gate.rows)
-    flipped.rows = flipped.rows[::-1]
-    return flipped
-
-def SHIFTGATE(state : list, phase : float) -> list:
-    shifted = []
-    rotor = comp.polar(1, phase)
-    for each in state:
-        shifted.append(comp.getcomplex(each) * rotor)
-    return shifted
-
-def SHIFT(phase : float) -> Type[lambda x: x]:
-    return lambda x: SHIFTGATE(x, phase)
-
-
-def RGATE(angle : float):
-    matrix = Matrix(2, 2)
-    matrix.rows[0][0] = comp(sin(angle), 0)
-    matrix.rows[0][1] = comp(cos(angle), 0)
-    matrix.rows[1][0] = comp(cos(angle), 0)
-    matrix.rows[1][1] = comp(-sin(angle), 0)
-    matrix.gateid = 'r'
-    return matrix
-
-
-def XGATE() -> Matrix:
-    matrix = Matrix(2, 2)
-    matrix.rows[0][0] = 0
-    matrix.rows[1][1] = 0
-    matrix.gateid = 'x'
-    return matrix
-
-def YGATE() -> Matrix:
-    matrix = Matrix(2, 2) * comp(0, 1)
-    matrix.rows[0][0] = 0
-    matrix.rows[1][1] = 0
-    matrix.rows[0][1] *= -1
-    matrix.gateid = 'y'
-    return matrix
-
-def ZGATE() -> Matrix:
-    matrix = IGATE()
-    matrix.rows[1][1] *= -1
-    matrix.gateid = 'z'
-    return matrix
-
-
-def PHASEGATE(phase : float) -> Matrix:
-    matrixgate = Matrix(2, 2) * 0
-    matrixgate.rows[0][0] = 1
-    matrixgate.rows[1][1] = comp.polar(1, phase)
-    matrixgate.gateid = 'phase'
-    return matrixgate
-
-def dagger(gate : Matrix) -> Matrix:
-    return gate.conjugate().transpose()
+def qtensor(q1 : List[int or float or comp], q2 : List[int or float or comp]) -> List[int or float or comp]:
+    """
+    Returns the tensor product Q1⛒Q2.
+    """
+    tensorproduct = []
+    for each in q1:
+        for every in q2:
+            tensorproduct.append(comp(each) * comp(every))
+    return tensorproduct
 
 
 def mtensor(m1 : Matrix, m2 : Matrix) -> Matrix:
+    """
+    Returns the Matrix tensor product M1⛒M2.
+    """
     r = m1.nrows * m2.nrows
     c = m1.ncols * m2.ncols
     product = Matrix(r, c)
@@ -261,25 +331,17 @@ def mtensor(m1 : Matrix, m2 : Matrix) -> Matrix:
         for i in range(m1.ncols):
             for x in range(m2.nrows):
                 for y in range(m2.ncols):
-                    product.rows[(m2.nrows * each) + x][(m2.ncols * i) + y] = comp.getcomplex(m1.rows[each][i]) * comp.getcomplex(m2.rows[x][y])
+                    product.rows[(m2.nrows * each) + x][(m2.ncols * i) + y] = comp(m1.rows[each][i]) * comp(m2.rows[x][y])
     return product
 
-
-class basischange:
-    def __init__(self, transformationmatrix : Matrix) -> None:
-        r, c = transformationmatrix.nrows, transformationmatrix.ncols
-        assert (r == 2) and (c == 2) , f"transformationmatrix must be a 2x2 matrix; got {r}x{c}"
-        self.transmat = transformationmatrix
+def MEASURE(tensor: List[int or float or comp]) -> List[int]:
+    """
+    Performs a measurement on a system of qubits.
     
-    def get(self, nqubitsinsystem : int = 1):
-        if nqubitsinsystem == 1: return self.transmat
-        else:
-            retter = deepcopy(self.transmat)
-            for _ in range(nqubitsinsystem - 1):
-                retter = mtensor(self.transmat, retter)
-            return retter
-
-def MEASURE(tensor: list) -> list:
+    `tensor` is a tensor in list form that represents the state of the system.
+    
+    Returns a sparse list with result of measurement.
+    """
     prev = 0
     ranges = list( map( lambda x: mod(x, True), tensor ) )
     m = random()
@@ -293,6 +355,9 @@ def MEASURE(tensor: list) -> list:
     return res
 
 def printreal(matrix : Matrix) -> None:
+    """
+    Prints the matrix array with only real parts of the entries.
+    """
     thing = ""
     for each in matrix.rows:
         line = ""
@@ -302,6 +367,9 @@ def printreal(matrix : Matrix) -> None:
     print(thing)
 
 def printimg(matrix : Matrix) -> None:
+    """
+    Prints the matrix array with only imaginary parts of the entries.
+    """
     thing = ""
     for each in matrix.rows:
         line = ""
@@ -310,61 +378,23 @@ def printimg(matrix : Matrix) -> None:
         thing += line
     print(thing)
 
-def tensor(q1 : list, q2 : list) -> list:
-    tensorproduct = []
-    for each in q1:
-        for every in q2:
-            try:
-                tensorproduct.append(each * every)
-            except TypeError:
-                tensorproduct.append(every * each)
-    return tensorproduct
 
-def CNOTGATEOLD(controlindex : int = 0, targetindex : int = 1) -> Matrix:
-    cg = Matrix(4, 4)
-    cg = cg * 0
-    for each in range(4):
-        for i in range(4):
-            if each == i: cg.rows[each][i] = comp(1, 0)
-    if controlindex == 0 and targetindex == 1:
-        buffer = cg.rows[-1]
-        cg.rows[-1] = cg.rows[-2]
-        cg.rows[-2] = buffer
-    elif controlindex == 1 and targetindex == 0:
-        buffer = cg.rows[-1]
-        cg.rows[-1] = cg.rows[1]
-        cg.rows[1] = buffer
-    cg.gateid = 'cnot'
-    return cg
+def plotmeasurement(measurement : list, binary = True, name : str = None, figsize : Tuple[int, int] = None) -> None:
+    """
+    Plots the measurement result graphically.
+    
+    `name` is the title for the graph.
+    
+    `binary` controls if the states are represented in binary or decimal.
+    
+    If matplotlib has not been installed, the terminal will automatically be used for plotting.
+    """
+    if figsize is None: figsize = (6, 4)
 
-def CNOTGATE(nqbits : int = 2, controlindex : int = 0, targetindex : int = 1) -> Matrix:
-    if controlindex == targetindex: raise BaseException("control and target cannot be the same")
-    if nqbits <= 1: raise BaseException("nqbits cannot be less than 2")
-    if nqbits == 2: return CNOTGATEOLD(controlindex = controlindex, targetindex = targetindex)
-    t = mtensor(CNOTGATEOLD(controlindex = controlindex, targetindex = targetindex), CNOTGATE(nqbits - 1, controlindex= controlindex, targetindex=targetindex))
-    t.gateid = 'cnot' + str(controlindex)
-    return t
-
-def FLIPPEDCNOTGATE(nqbits : int = 2) -> Matrix:
-    fcnot = Matrix(4, 4) * 0
-    fcnot.rows[0][0] = comp(1, 0)
-    fcnot.rows[1][3] = comp(1, 0)
-    fcnot.rows[2][2] = comp(1, 0)
-    fcnot.rows[3][1] = comp(1, 0)
-    fcnot.gateid = 'fcnot'
-    return fcnot
-
-
-def CNOT(qcontrol : list, qtarget : list) ->list:
-    tens = tensor(qcontrol, qtarget)
-    result = CNOTGATE() ** tens
-    return result
-
-
-def plotmeasurement(measurement : list, binary = True, name : str = None) -> None:
     eigenvectors = [('Ψ' + (('0' * (int(log(len(measurement), 2)) - len(str(bin(i))[2:]))) + str(bin(i))[2:])) for i in range(len(measurement))]
     if not binary : eigenvectors = [('Ψ' + str(i)) for i in range(len(measurement))]
     if mple:
+        plt.figure(figsize=figsize)
         plt.ylim(0, 100)
         plt.bar(eigenvectors, measurement)
         plt.xlabel("Eigenstates")
@@ -375,6 +405,13 @@ def plotmeasurement(measurement : list, binary = True, name : str = None) -> Non
         plotinterminal(measurement=measurement, binary= binary)
 
 def plotinterminal(measurement : list, binary = True, name : str = None) -> None:
+    """
+    Plots the measurement result graphically in terminal.
+    
+    `name` is the title for the graph.
+    
+    `binary` controls if the states are represented in binary or decimal.
+    """
     eigenvectors = [('Ψ' + (('0' * (int(log(len(measurement), 2)) - len(str(bin(i))[2:]))) + str(bin(i))[2:])) for i in range(len(measurement))]
     if not binary : eigenvectors = [('Ψ' + str(i)) for i in range(len(measurement))]
     graph = f"\n{'' if name is None else name}"
@@ -387,7 +424,15 @@ def plotinterminal(measurement : list, binary = True, name : str = None) -> None
     print(graph)
     return graph
 
-def run(shots : int, state : list, binary : bool = True, graph : bool = False, terminal : bool = False, name : str = None) -> None:
+def run(shots : int, state : List[int or float or comp], binary : bool = True, graph : bool = False, terminal : bool = False, name : str = None, figsize : Tuple[int, int] = None) -> None:
+    """
+    Runs measurements on a state of the system.
+    
+    The state is measured `shots` number of times, and percentages of each outcome is recorded.
+    
+    If `graph` is set to True, the result is also plotted graphically.
+    """
+    
     sl = int(log(len(state), 2))
     res = [0 for i in range(len(state))]
     for each in range(shots):
@@ -402,40 +447,157 @@ def run(shots : int, state : list, binary : bool = True, graph : bool = False, t
     ret = ret[:-2]
     print(ret)
     if graph:
-        if not terminal: plotmeasurement([((each/shots) * 100) for each in res], binary = binary, name = name)
+        if not terminal: plotmeasurement([((each/shots) * 100) for each in res], binary = binary, name = name, figsize = figsize)
         else: plotinterminal([((each/shots) * 100) for each in res], binary = binary, name = name)
 
-def extract(measurement : list, qbitindex : int) -> list:
+def extract(measurement : List[int], qbitindex : int) -> List[int]:
+    """
+    Returns the state of Qubit at index `qbitindex` in `measurement`.
+    
+    NOTE: returns qubits in list form ([0, 1] or [1, 0]).
+    """
     nqbits = int(log(len(measurement), 2))
     index = bin(measurement.index(1))[2:]
     index = ('0' * (nqbits - len(index))) + index
     index = int(index[qbitindex])
     return ([0, 1] if index else [1, 0])
 
-
-reprs = {
-    'r' : '[ R ]',
-    'i' : '[ I ]',
-    'n' : '[ ~ ]',
-    'x' : '[ X ]',
-    'y' : '[ Y ]',
-    'z' : '[ Z ]',
-    'h' : '[ H ]',
-    'cnot' : '[ ⛒ ]',
-    'fcnot' : '[ ⛒ ]',
-    'phase' : '[ θ ]',
-    'pin' : '[ ☉ ]'
-}
+def validgate(gate : Matrix) -> bool:
+    """
+    Verifies if a Matrix object is a valid quantum gate.
+    This aint working for some reason dont use it
+    """
+    print((gate.nrows == gate.ncols))
+    print((gate * gate) == Matrix(gate.nrows))
+    return (
+        (gate.nrows == gate.ncols) and ((gate * gate) == Matrix(gate.nrows))
+    )
 
 
-def getrepr(gate : Matrix) -> str:
-    try : return reprs[gate.gateid]
-    except : 
-        print(f"Gate represntation not found: {gate.gateid}")
-        return '[ ! ]'
+HGATE = Matrix([
+    [comp(1),  comp(1)],
+    [comp(1), comp(-1)]
+], id = 'h') * pow(2, -0.5)
+
+IGATE = Matrix(2, id = 'i')
+
+CNOT0 = Matrix(4, id = 'c0')
+CNOT0.rows[2], CNOT0.rows[3] = CNOT0.rows[3], CNOT0.rows[2]
+
+CNOT1 = Matrix(4, id = 'c1')
+CNOT1.rows[1], CNOT1.rows[3] = CNOT1.rows[3], CNOT1.rows[1]
+
+XGATE = Matrix([
+    [comp(), comp(1)],
+    [comp(1), comp()]
+], id = 'x')
+
+YGATE = Matrix([
+    [comp(), comp(0, -1)],
+    [comp(0, 1), comp( )]
+], id = 'y')
+
+ZGATE = Matrix([
+    [comp(1), comp( )],
+    [comp(), comp(-1)]
+], id = 'z')
+
+TGATE = Matrix([
+    [comp(1), comp()],
+    [comp(), comp.polar(1, pi/4)]
+], id = 't')
+
+SWAPGATE = Matrix(4, id = 'swap')
+SWAPGATE.rows[1], SWAPGATE.rows[2] = SWAPGATE.rows[2], SWAPGATE.rows[1]
+
+MTENSORIDENTITY = Matrix([
+    [comp(1)]
+], id = 'm')
+
+TOFFOLIGATE = Matrix(8, id = 'tof')
+TOFFOLIGATE.rows[6], TOFFOLIGATE.rows[7] = TOFFOLIGATE.rows[7], TOFFOLIGATE.rows[6]
+
+def RGATE(angle : float) -> Matrix:
+    """
+    Returns a matrix of the form:
+
+    
+    [ sin(angle)   cos(angle) ]
+    
+    [ cos(angle)  -sin(angle) ]
+
+    
+    `angle` is in radians.
+    """
+    matrix = Matrix(2)
+    matrix.rows[0][0] = comp(sin(angle), 0)
+    matrix.rows[0][1] = comp(cos(angle), 0)
+    matrix.rows[1][0] = comp(cos(angle), 0)
+    matrix.rows[1][1] = comp(-sin(angle), 0)
+    matrix.gateid = f'r({round(angle, 2)})'
+    return matrix
+
+
+class basischange:
+    """
+    A class for dealing with basis change.
+    
+    Instance of this object can be passed into qprogram for changing the basis.
+    """
+    def __init__(self, transformationmatrix : Matrix) -> None:
+        """
+        Transformation matrix is the matrix for changing basis of the system.
+        
+        Must be a 2x2 matrix.
+        """
+        r, c = transformationmatrix.nrows, transformationmatrix.ncols
+        assert (r == 2) and (c == 2) , f"transformationmatrix must be a 2x2 matrix; got {r}x{c}"
+        self.transmat = transformationmatrix
+    
+    def get(self, nqubitsinsystem : int = 1):
+        """
+        Returns the transformation matrix for an n-qubit system.
+        """
+        if nqubitsinsystem == 1: return self.transmat
+        else:
+            retter = deepcopy(self.transmat)
+            for _ in range(nqubitsinsystem - 1):
+                retter = mtensor(self.transmat, retter)
+            return retter
+
+class Block:
+    pass
 
 class qprogram(object):
+    """
+    Class for a Quantum Program.
+    This class deals in the gates and circuits model of quantum computing.
+
+    The normal pipeline for running a qprogram is to instantiate it, add gates, compile and then run.
+    
+    Example:
+    `
+    entangler = qprogram(2, name = 'quantum entanglement')
+    
+    entangler.addgates(0, [HGATE, CNOT0])
+    
+    entangler.compile()
+    
+    entangler.run(graph = True)
+    `
+
+    NOTE: It is assumed that measurement takes place at the end of the qprogram in the circuit diagram.
+    """
     def __init__(self, nqbits : int, custom : list = None, bchange : basischange = None, name : str = None) -> None:
+        """
+        `nqbits` -> no. of qubits in the system.
+        
+        `custom` -> a list of integers that sets the initial state of each of the qubits (by default 0 for all).
+        
+        `bchange` -> a BasisChange object for changing the basis.
+        
+        `name` -> name of the Quantum program.
+        """
         self.qbits = []
         self.nqbits = nqbits
         self.cache = None
@@ -446,93 +608,261 @@ class qprogram(object):
         self.gates = [[] for i in range(nqbits)]
         self.bchange = bchange
         self.name = name
-        self.repr = f"The program {'' if self.name is None else self.name} is yet to be compiled"
+        self.repr = None
+        self.programmat = None
 
     def addgates(self, qbitindex : int, gates : list):
+        """
+        Adds gates to the qprogram.
+
+        `qbitindex` is the index of the bit to which gates are added.
+        
+        `gates` is a list containing the sequence of gates to be added.
+        """
         self.cache = None
+        self.programmat = None
         self.gates[qbitindex] += gates
+    
+    def removegate(self, qbitindex : int, gateindex : int = -1) -> None:
+        """
+        Removes the gate at the specified position.
+        
+        If gate index is not provided, by default the last gate in the sequence is removed.
+        """
+        del self.gates[qbitindex][gateindex]
+
+    def cleargates(self, qbitindex : int) -> None:
+        """
+        Removes all gates on the circuit line corresponding to Qubit at `qbitindex`.
+        """
+        self.gates[qbitindex] = []
 
     def __repr__(self) -> str:
+        if self.repr is None : return f"The program {'' if self.name is None else self.name} is yet to be compiled"
         return self.repr
-
+    
     def compile(self, verbose : bool = False, showcompilationresult : bool = True):
+        """
+        Compiles the qprogram. This step is necessary before running the qprogram, and everytime the circuit-gate diagram is changed.
+
+
+        If `verbose`, debug info is showed as well.
+        
+        If `showcompilationresult`, the final block diagram of the program is displayed.
+        """
+
         if showcompilationresult : print(f"\nCompiling {'program' if self.name is None else self.name}...")
+
+        for each in self.gates:
+            for i in each:
+                if type(i) == Block : i.compile(showcompilationresult = False)
+
         longest = 0
+        for each in self.gates:
+            if len(each) > longest : longest = len(each)
+        if verbose : print("longest set of gates :",longest)
+        for each in range(len(self.gates)):
+            self.gates[each] += [IGATE for _ in range(longest - len(self.gates[each]))]
+
         for each in range(len(self.gates)):
             for i in range(len(self.gates[each])):
-                if self.gates[each][i].gateid == 'cnot':
-                    pin = IGATE()
-                    pin.gateid = 'pin'
-                    self.gates[each - 1].insert(i, pin)
-                elif self.gates[each][i].gateid == 'fcnot':
-                    pin = IGATE()
-                    pin.gateid = 'pin'
-                    self.gates[each + 1].insert(i, pin)
-        for each in range(len(self.gates)):
-            if longest < len(self.gates[each]): longest = len(self.gates[each])
+                try:
+                    for x in range(self.gates[each][i].span - 1):
+                        x += 1
+                        if self.gates[each + x][i].gateid != 'm': self.gates[each + x].insert(i, MTENSORIDENTITY)
+                except IndexError:
+                    print(f"Invalid position ({each}, {i}) for gate ({self.gates[each][i].gateid}) of span {self.gates[each][i].span}\nAborting compilation...")
+                    return
         
+        if verbose:
+            for each in self.gates:
+                for i in each:
+                    print(i.gateid, end=' ')
+                print()
+
+        longest = 0
+        for each in self.gates:
+            if len(each) > longest : longest = len(each)
+        if verbose : print("longest set of gates :",longest)
         for each in range(len(self.gates)):
-            self.gates[each] += [IGATE() for i in range(longest - len(self.gates[each]))]
+            self.gates[each] += [IGATE for _ in range(longest - len(self.gates[each]))]        
         
+        if verbose:
+            print()
+            for each in self.gates:
+                for i in each:
+                    print(i.gateid, end=' ')
+                print()
+        
+        archways = []
+        for each in range(longest):
+            allidentities = True
+            for i in range(len(self.gates)):
+                allidentities = allidentities and (self.gates[i][each].gateid == 'i')
+            if allidentities:
+                if verbose: print(f"Skipping tensor product at {each} due to all I gates...")
+                continue
+            prod = MTENSORIDENTITY
+            for i in range(len(self.gates)):
+                prod = mtensor(prod, self.gates[i][each])
+            archways.append(prod)
+        
+        if verbose:
+            print("Archway shapes: ", end = "")
+            for each in archways:
+                print(each.shape, end = ' ')
+        
+        finalmat = Matrix(pow(2, len(self.gates)), pow(2, len(self.gates)))
+        for each in archways[::-1]:
+            finalmat = finalmat * each
+        
+        if verbose:
+            print(f"\nFinal mat shape : {finalmat.shape}")
+        
+        self.programmat = finalmat
+
         self.calcrepr()
-        
+
         if showcompilationresult:
-            print(self)
-            print("Compilation complete!\n")
+            print(self.repr)
+            print(f"\nCompilation{(' of ' + self.name) if self.name is not None else ''} complete!\n")
 
-        if verbose and self.cache is not None: print(self.cache)
-
-        self.cache = None
-        return self
-
+    
+    
     def calcrepr(self):
-        string = f"\n{'' if self.name is None else self.name}"
-        if self.name is not None: string += '\n'
-        for each in range(self.nqbits):
-            line = f"q{str(each)} ({self.qbits[each][1]}) ⮕  ---"
-            for i in range(len(self.gates[each])):
-                line += getrepr(self.gates[each][i])
-                line += "---"
-            string += line + '\n'
+        """
+        Makes and returns the string representation of the block diagram of the qprogram.
+        """
+        string = f"\n{'' if self.name is None else self.name}\n"
+
+        reprs = [f'q{i}({self.qbits[i].index(1)}) ⮕  ---' for i in range(len(self.gates))]
+
+        for i in range(len(self.gates[0])):
+            for each in range(len(self.gates)):
+                gate = self.gates[each][i]
+                # print('o', gate.gateid)
+                if gate.gateid in ['i', 'm']:
+                    reprs[each] += '--'
+                    continue
+                if gate.span == 1: reprs[each] += f'--[ {gate.gateid} ]--'
+                else:
+                    ori = len(reprs[each])
+                    reprs[each] += ('-' * (len(max(reprs, key=len)) - ori))
+                    ori = len(reprs[each])
+                    reprs[each] += '⌈'
+                    for _ in range(gate.span) : reprs[each] += f' {gate.gateid}'
+                    reprs[each] += ' ⌉'
+                    for x in range(gate.span - 2):
+                        reprs[each + x + 1] += ('-' * (ori - len(reprs[each + x + 1])))
+                        reprs[each + x + 1] += '|'
+                        for _ in range(gate.span) : reprs[each + x + 1] += f' {gate.gateid}'
+                        reprs[each + x + 1] += ' |'
+                    reprs[each + gate.span - 1] += ('-' * (ori - len(reprs[each + gate.span - 1])))
+                    reprs[each + gate.span - 1] += '⌊'
+                    for _ in range(gate.span) : reprs[each + gate.span - 1] += f' {gate.gateid}'
+                    reprs[each + gate.span - 1] += ' ⌋'
+
+        longest = 0
+        for each in reprs:
+            if len(each) > longest: longest = len(each)
+
+        for each in reprs:
+            string += each
+            string += ('-' * (longest - len(each)))
+            string += '---\n'
         self.repr = string
     
-    def getstate(self, verbose : bool = False, usecache : bool = True) -> list:
-        if self.cache != None and usecache:
-            print("Using cache...")
-            return self.cache
-        length = len(self.gates[0])
 
+    def measure(self) -> list:
+        """
+        Performs and returns the result of a single measurement.
+        """
         state = self.qbits[0]
-        for each in range(1, self.nqbits): state = tensor(state, self.qbits[each])
+        for each in range(1, self.nqbits): state = qtensor(state, self.qbits[each])
+        state = (self.programmat * state).getlist()
 
-        for each in range(0, length):
-            gates = []
-            for i in range(self.nqbits): 
-                if verbose: print("ngates", len(gates))
-                if self.gates[i][each].gateid == 'cnot': 
-                    if verbose: print('activated')
-                    del gates[-1]
-                if i == 0: gates.append(self.gates[i][each])
-                elif self.gates[i - 1][each].gateid != 'fcnot': gates.append(self.gates[i][each])
-            if verbose: print(len(gates))
-            tens = gates[0]
-            # printreal(tens)
-            for each in range(1, len(gates)): 
-                if verbose: printreal(tens)
-                tens = mtensor(tens, gates[each])
-            if verbose: printreal(tens)
-            state = tens ** state
-            if verbose: print(state)
-        
-        if self.bchange is not None: state = self.bchange.get(self.nqbits) ** state
-        
-        self.cache = state
-        return state
-
-    def measure(self, verbose : bool = False, usecache : bool = True) -> list:
-        return MEASURE(self.getstate(verbose = verbose, usecache=usecache))
+        return MEASURE(state)
     
-    def run(self, shots : int = 1600, verbose : bool = False, binary : bool  = True, graph : bool = False, usecache : bool = True, terminal : bool = False) -> None:
-        state = self.getstate(verbose = verbose, usecache=usecache)
+    def run(self, shots : int = 1600, binary : bool  = True, graph : bool = False, terminal : bool = False, figsize : Tuple[int, int] = None) -> None:
+        """
+        Runs and records the outcome of the qprogram.
+
+
+        `shots` -> No. of times the measurement of the final state of the system is repeated.
         
-        run(shots, state, binary=binary, graph=graph, terminal=terminal, name = self.name)
+        `binary` -> Format of the numeric states displayed in the output.
+
+        `graph` -> If set to True, the output of the qprogram is plotted graphically. May use matplotlib if installed.
+
+        `terminal` -> Force all the output (including graphs) to be displayed only on the terminal window.
+        """
+        
+        state = self.qbits[0]
+        for each in range(1, self.nqbits): state = qtensor(state, self.qbits[each])
+
+        state = (self.programmat * state).getlist()
+
+        run(shots, state, binary=binary, graph=graph, terminal=terminal, name = self.name, figsize = figsize)
+    
+    def getblock(self, blockid : str = None) -> Block:
+        """
+        Converts the program to a block and returns it.
+
+        If a block id is not provided, program name is used in its stead.
+        """
+        self.compile(showcompilationresult=False)
+        block = Block(self.nqbits, blockid)
+        block.gates = deepcopy(self.gates)
+        block.programmat = deepcopy(self.programmat)
+        return block
+
+
+class Block(qprogram):
+    """
+    A group of gates' arrangement.
+
+    Blocks can be used in exactly the same way as normal gates, and can contain Blocks themselves.
+
+    A qprogram containing Blocks recursively and automatically compiles all the child blocks, hence blocks can be changed dynamically.
+    """
+    def __init__(self, nqbits: int, blockid: str) -> None:
+        self.gateid = blockid
+        super().__init__(nqbits, name = f"{blockid}_block")
+    
+    def __repr__(self) -> str:
+        if self.repr is None : self.compile(showcompilationresult = False)
+        return self.repr
+
+    def compile(self, verbose: bool = False, showcompilationresult: bool = True):
+        """
+        Compiles the block (not necessary to be done by the user).
+        """
+        super().compile(verbose, showcompilationresult)
+        self.span = self.programmat.span
+        self.shape = self.programmat.shape
+        self.ncols = self.programmat.ncols
+        self.nrows = self.programmat.nrows
+        self.rows = self.programmat.rows
+    
+    def getmat(self) -> Matrix:
+        """
+        Returns the plain corresponding to this Block.
+        """
+        self.compile(showcompilationresult = False)
+        blockmat = self.programmat
+        blockmat.gateid = self.gateid
+        return blockmat
+
+def controlledU(u : Matrix) -> Matrix:
+    """
+    Returns the controlled version of gate U, assuming the top qubit (q0) is the control qubit and U is applied on the subsequent set of qubits.
+    """
+    cu = Matrix(pow(2, u.span + 1), id = f"C_{u.gateid}")
+    
+    start = pow(2, u.span)
+
+    for each in range(start):
+        for i in range(start):
+            cu.rows[each + start][i + start] = u.rows[each][i]
+
+    return cu
