@@ -1,6 +1,6 @@
 from math import atan, pi, log, cos, sin
 from random import random
-from typing import List
+from typing import List, Tuple
 from copy import deepcopy
 mple = True
 
@@ -153,6 +153,19 @@ class Matrix(object):
         for each in range(len(a)):
             d += (comp.getcomplex(a[each]) * b[each])
         return d
+    
+    def __add__(self, other : object):
+        assert (self.nrows == other.nrows) and (self.ncols == other.ncols), f"Matrices must be of same order; found {self.nrows}x{self.ncols} and {other.nrows}x{other.ncols}."
+        summ = Matrix(self.nrows, self.ncols, f'{self.gateid}+{other.gateid}')
+
+        for each in range(self.nrows):
+            for i in range(self.ncols):
+                summ.rows[each][i] = self.rows[each][i] + other.rows[each][i]
+        
+        return summ
+
+    def __sub__(self, other : object):
+        return (self + (other * -1))
 
     def __mul__(self, other : object or list or float or int or comp):
         assert (
@@ -366,7 +379,7 @@ def printimg(matrix : Matrix) -> None:
     print(thing)
 
 
-def plotmeasurement(measurement : list, binary = True, name : str = None) -> None:
+def plotmeasurement(measurement : list, binary = True, name : str = None, figsize : Tuple[int, int] = None) -> None:
     """
     Plots the measurement result graphically.
     
@@ -376,9 +389,12 @@ def plotmeasurement(measurement : list, binary = True, name : str = None) -> Non
     
     If matplotlib has not been installed, the terminal will automatically be used for plotting.
     """
+    if figsize is None: figsize = (6, 4)
+
     eigenvectors = [('Ψ' + (('0' * (int(log(len(measurement), 2)) - len(str(bin(i))[2:]))) + str(bin(i))[2:])) for i in range(len(measurement))]
     if not binary : eigenvectors = [('Ψ' + str(i)) for i in range(len(measurement))]
     if mple:
+        plt.figure(figsize=figsize)
         plt.ylim(0, 100)
         plt.bar(eigenvectors, measurement)
         plt.xlabel("Eigenstates")
@@ -408,7 +424,7 @@ def plotinterminal(measurement : list, binary = True, name : str = None) -> None
     print(graph)
     return graph
 
-def run(shots : int, state : List[int or float or comp], binary : bool = True, graph : bool = False, terminal : bool = False, name : str = None) -> None:
+def run(shots : int, state : List[int or float or comp], binary : bool = True, graph : bool = False, terminal : bool = False, name : str = None, figsize : Tuple[int, int] = None) -> None:
     """
     Runs measurements on a state of the system.
     
@@ -431,7 +447,7 @@ def run(shots : int, state : List[int or float or comp], binary : bool = True, g
     ret = ret[:-2]
     print(ret)
     if graph:
-        if not terminal: plotmeasurement([((each/shots) * 100) for each in res], binary = binary, name = name)
+        if not terminal: plotmeasurement([((each/shots) * 100) for each in res], binary = binary, name = name, figsize = figsize)
         else: plotinterminal([((each/shots) * 100) for each in res], binary = binary, name = name)
 
 def extract(measurement : List[int], qbitindex : int) -> List[int]:
@@ -767,7 +783,7 @@ class qprogram(object):
 
         return MEASURE(state)
     
-    def run(self, shots : int = 1600, binary : bool  = True, graph : bool = False, terminal : bool = False) -> None:
+    def run(self, shots : int = 1600, binary : bool  = True, graph : bool = False, terminal : bool = False, figsize : Tuple[int, int] = None) -> None:
         """
         Runs and records the outcome of the qprogram.
 
@@ -786,7 +802,7 @@ class qprogram(object):
 
         state = (self.programmat * state).getlist()
 
-        run(shots, state, binary=binary, graph=graph, terminal=terminal, name = self.name)
+        run(shots, state, binary=binary, graph=graph, terminal=terminal, name = self.name, figsize = figsize)
     
     def getblock(self, blockid : str = None) -> Block:
         """
