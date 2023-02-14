@@ -1,3 +1,6 @@
+#An implmementation of rock paper scissors using a quantum program
+
+
 from quantum import *
 
 rps = qprogram(2)

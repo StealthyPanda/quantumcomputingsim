@@ -811,7 +811,8 @@ class qprogram(object):
         If a block id is not provided, program name is used in its stead.
         """
         self.compile(showcompilationresult=False)
-        block = Block(self.nqbits, self.name)
+        block = Block(self.nqbits, blockid)
+        block.gates = deepcopy(self.gates)
         block.programmat = deepcopy(self.programmat)
         return block
 
@@ -849,7 +850,7 @@ class Block(qprogram):
         """
         self.compile(showcompilationresult = False)
         blockmat = self.programmat
-        blockmat.gateid = self.blockid
+        blockmat.gateid = self.gateid
         return blockmat
 
 def controlledU(u : Matrix) -> Matrix:
