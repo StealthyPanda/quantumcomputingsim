@@ -2,13 +2,15 @@ from math import atan, pi, log, cos, sin, acos
 from random import random
 from typing import List, Tuple
 from copy import deepcopy
+import logging
+
 mple = True
 
 try:
     import matplotlib.pyplot as plt
 except ModuleNotFoundError:
     mple = False
-    print("Module `matplotlib` is not installed, will use terminal workarounds for graphing instead.")
+    logging.warning("Module `matplotlib` is not installed, graphs will be plotted in terminal instead.")
 
 
 PI = pi
@@ -50,9 +52,15 @@ class comp(object):
         return comp(r * cos(theta), r * sin(theta))
     
     def getmagnitude(self) -> float:
+        """
+        Returns |z|.
+        """
         return self.r
 
     def getphase(self) -> float:
+        """
+        Returns ∠z.
+        """
         return self.theta
 
     def __eq__(self, o: object) -> bool:
@@ -117,7 +125,6 @@ class Matrix(object):
     Matrix of 2 dimensions with entries of type comp or float or int.
     
     A matrix on its own is a valid quantum gate that can be added to a qprogram via qprogram.addgates().
-
     
     Matrix.shape is the order of the matrix.
     
@@ -133,11 +140,11 @@ class Matrix(object):
 
     def __init__(self, r : int, c : int = -1, id : str = None):
         """
-        Matrix(integer) returns a integer x integer Identity matrix.
-        
         Matrix(a, b) returns a matrix of order a x b.
         
         Matrix(List[List[float or int or comp]]) converts a 2D matrix from list form to Matrix type.
+        
+        Matrix(integer) returns a Identity matrix of order integer x integer.
 
         `id` is the gateid of the quantum gate (preferably 1 or a few chars at most).
         """
@@ -296,13 +303,13 @@ class Matrix(object):
         elif self.shape[1] == 1: return self.transpose().rows[0]
         else: print(f"Cannot meaningfully convert to list; at least 1 dimension must be 1; shape : {self.shape}")
 
-def mod(x, squared = False) -> float:
+def mod(x : int or comp or float, squared = False) -> float:
     """
     Returns the mod value of x.
     
     If squared is True, returns the square of the mod value.
     """
-    if type(x) == type(comp(0, 0)):
+    if type(x) == comp:
         return pow(x.r, 2) if squared else x.r
     else:
         return (x if x >= 0 else (-1 * x)) if not squared else pow(x, 2)
@@ -353,7 +360,7 @@ def MEASURE(tensor: List[int or float or comp]) -> List[int]:
     prev = 0
     ranges = list( map( lambda x: mod(x, True), tensor ) )
     m = random()
-    res = [0 for i in range(len(tensor))]
+    res = [0 for _ in range(len(tensor))]
     for each in range(len(tensor)):
         ranges[each] += prev
         prev = ranges[each]
@@ -403,6 +410,7 @@ def plotmeasurement(measurement : list, binary = True, name : str = None, figsiz
     if not binary : eigenvectors = [('Ψ' + str(i)) for i in range(len(measurement))]
     if mple:
         plt.figure(figsize=figsize)
+        plt.grid()
         plt.ylim(0, 100)
         plt.bar(eigenvectors, measurement)
         plt.xlabel("Eigenstates")
