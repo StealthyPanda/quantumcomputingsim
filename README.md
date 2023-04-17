@@ -11,6 +11,7 @@
   [![GitHub Issues](https://img.shields.io/github/issues/stealthypanda/quantumcomputingsim.svg)](https://img.shields.io/github/issues/stealthypanda/quantumcomputingsim.svg)
   [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/stealthypanda/quantumcomputingsim.svg)](https://img.shields.io/github/issues-pr/stealthypanda/quantumcomputingsim.svg)
   [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
+  ![GitHub release (latest by date)](https://img.shields.io/github/v/release/stealthypanda/quantumcomputingsim)
 
 </div>
 
@@ -69,6 +70,8 @@ Give an example
 ``` -->
 
 ## Usage <a name="usage"></a>
+*Go through example.ipynb for a comprehensive guide on using this library*
+
 Sample workflow:
 
 ```
