@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/StealthyPanda/quantumcomputingsim" rel="noopener">
- <img width=200px height=200px src="./logo.png" alt="Project logo"></a>
+ <img width=200px height=200px src="./docs/logo.png" alt="Project logo"></a>
 </p>
 
 <h3 align="center">Quantum Computing Simulator  </h3>
@@ -96,13 +96,13 @@ and to run the program:
 ```
 entangler.run(graph = True)
 ```
-![graph](./graph.png)
+![graph](./docs/graph.png)
 
 and view bloch spheres for qubits:
 ```
 plotbloch(HGATE * [0, 1])
 ```
-![bloch](./bloch.png)
+![bloch](./docs/bloch.png)
 
 <!-- ## 🚀 Deployment <a name = "deployment"></a>
 Add additional notes about how to deploy this on a live system.
