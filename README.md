@@ -33,7 +33,6 @@
 A python library to simulate quantum computing on classical computers. -->
 
 ## Getting Started <a name = "getting_started"></a>
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See [deployment](#deployment) for notes on how to deploy the project on a live system.
 
 ### Prerequisites
 This library is self contained, and optionally uses matplotlib for plotting graphs.
@@ -117,7 +116,7 @@ Add additional notes about how to deploy this on a live system.
 - [NodeJs](https://nodejs.org/en/) - Server Environment -->
 
 ## Authors <a name = "authors"></a>
-- [@stealthypanda](https://github.com/stealthypanda) - Idea & Initial work
+- [@stealthypanda](https://github.com/stealthypanda)
 
 
 <!-- 
