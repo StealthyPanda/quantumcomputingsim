@@ -1,4 +1,4 @@
-from math import atan, pi, log, cos, sin
+from math import atan, pi, log, cos, sin, acos
 from random import random
 from typing import List, Tuple
 from copy import deepcopy
@@ -34,7 +34,10 @@ class comp(object):
             self.b = b
         self.r = pow(( pow(self.a, 2) + pow(self.b, 2) ), 0.5)
         try:
-            self.theta = atan((self.b/self.a))
+            self.theta = atan(mod(self.b/self.a))
+            if (self.a <= 0) and (self.b >= 0) : self.theta = pi - self.theta
+            elif (self.a >= 0) and (self.b <= 0) : self.theta = -self.theta
+            elif (self.a <= 0) and (self.b <= 0) : self.theta = self.theta - pi
         except ZeroDivisionError:
             self.theta = pi/2 * (1 if self.b >= 0 else -1)
 
@@ -45,7 +48,12 @@ class comp(object):
         Theta is measured in radians; use quantum.pi or Pi or PI for π
         """
         return comp(r * cos(theta), r * sin(theta))
+    
+    def getmagnitude(self) -> float:
+        return self.r
 
+    def getphase(self) -> float:
+        return self.theta
 
     def __eq__(self, o: object) -> bool:
         if type(o) == int or type(o) == float: return ((self.a == o) and (self.b == 0))
@@ -389,7 +397,7 @@ def plotmeasurement(measurement : list, binary = True, name : str = None, figsiz
     
     If matplotlib has not been installed, the terminal will automatically be used for plotting.
     """
-    if figsize is None: figsize = (6, 4)
+    if figsize is None: figsize = (22, 8)
 
     eigenvectors = [('Ψ' + (('0' * (int(log(len(measurement), 2)) - len(str(bin(i))[2:]))) + str(bin(i))[2:])) for i in range(len(measurement))]
     if not binary : eigenvectors = [('Ψ' + str(i)) for i in range(len(measurement))]
@@ -630,6 +638,7 @@ class qprogram(object):
         If gate index is not provided, by default the last gate in the sequence is removed.
         """
         del self.gates[qbitindex][gateindex]
+        if type(self) == Block : self.compile()
 
     def cleargates(self, qbitindex : int) -> None:
         """
@@ -811,7 +820,7 @@ class qprogram(object):
         If a block id is not provided, program name is used in its stead.
         """
         self.compile(showcompilationresult=False)
-        block = Block(self.nqbits, blockid)
+        block = Block(self.nqbits, blockid if blockid is not None else self.name)
         block.gates = deepcopy(self.gates)
         block.programmat = deepcopy(self.programmat)
         return block
@@ -866,3 +875,90 @@ def controlledU(u : Matrix) -> Matrix:
             cu.rows[each + start][i + start] = u.rows[each][i]
 
     return cu
+
+
+def getblochangles(qbit : List[int or comp or float]) -> Tuple[float, float]:
+    """
+    Returns (theta, phi) for the given qubit (The bloch sphere angles).
+    theta is w.r.t. |0>, and phi is w.r.t. x axis.
+    """
+    alpha, beta = comp(qbit[0]), comp(qbit[1])
+    theta = 2 * acos(alpha.getmagnitude())
+    gamma = alpha.getphase()
+    phi = beta.getphase() - gamma
+
+    return (theta, phi)
+
+def plotbloch(qbit : List[int or comp or float] or Matrix, figsize : Tuple[int, int] = (21, 7)) -> None:
+    """
+    Plots bloch sphere in matplotlib for the given qubit.
+    """
+    if type(qbit) == Matrix: qbit = qbit.getlist()
+
+    alpha = -pi/6
+
+    newori = (2.6, 0)
+    moreori = (5.2, 0)
+    plt.figure(figsize=figsize)
+    ax = plt.axes()
+    ax.add_artist(plt.Circle((0, 0), 1, fill = False))
+    ax.add_artist(plt.Circle(newori, 1, fill = False))
+    ax.add_artist(plt.Circle(moreori, 1, fill = False))
+    
+    plt.scatter([0], [0], label = 'origin', s = 10, color = 'blue')
+    plt.scatter([newori[0]], [newori[1]], label = 'newori', s = 10, color = 'blue')
+    plt.xlim((-1.3, 6.7))
+    plt.ylim((-1.1, 1.5))
+    plt.arrow(0, 0, 1.1 * cos(alpha), 1.1 * sin(alpha), width = 0.01, head_width = 0.1, alpha = 0.3)
+    plt.arrow(0, 0, -0.8 * cos(alpha), -0.8 * sin(alpha), width = 0.01, head_width = 0.1, alpha = 0.3)
+    plt.text(1.3 * cos(alpha), 1.3 * sin(alpha), 'Y', fontsize = 15)
+    plt.text(-1.35 * cos(alpha), 1.3 * sin(alpha), 'X', fontsize = 15)
+    plt.arrow(0, 0, -1.1 * cos(alpha), 1.1 * sin(alpha), width = 0.01, head_width = 0.1, alpha = 0.3)
+    plt.arrow(0, 0, 0.8 * cos(alpha), -0.8 * sin(alpha), width = 0.01, head_width = 0.1, alpha = 0.3)
+    plt.arrow(0, 0, 0, 1.1, width = 0.01, head_width = 0.1, alpha = 0.3)
+    plt.arrow(0, 0, 0, -0.8, width = 0.01, head_width = 0.1, alpha = 0.3)
+    plt.text(-0.03, 1.3, 'Z |0>', fontsize = 15)
+    plt.text(-0.03, -1.2, '|1>', fontsize = 15)
+    # plt.legend()
+    plt.axis('off')
+
+    theta, phi = getblochangles(qbit)
+
+    # print("theta, phi:", theta, phi)
+
+    z, x, y = cos(theta), (sin(theta) * cos(phi)), (sin(theta) * sin(phi))
+
+    i = ((y - x) * cos(alpha))
+    j = ((y + x) * sin(alpha)) + z
+
+    m = pow(pow(i, 2) + pow(j, 2), 0.5)
+    if m > 1:
+        i /= m
+        j /= m
+
+    plt.scatter([i], [j], s = 200, color = 'red', alpha = 0.7)
+    plt.arrow(0, 0, i * 0.8, j * 0.8, width = 0.01, head_width = 0.1, alpha = 0.5, color = 'red')
+
+    plt.arrow(newori[0], newori[1], 1, 0, width = 0.01, head_width = 0.1, alpha = 0.3)
+    plt.text(newori[0] + 1.2, newori[1], 'Y', fontsize = 15)
+    plt.text(newori[0] - 0.2, newori[1], 'Z', fontsize = 15)
+    plt.arrow(newori[0], newori[1], 0, -1, width = 0.01, head_width = 0.1, alpha = 0.3)
+    plt.text(newori[0] + 0.1, newori[1] - 1.15, 'X', fontsize = 15)
+    
+    plt.scatter([y + newori[0]], [-x + newori[1]], s = 200, color = 'red', alpha = 0.7)
+    plt.arrow(newori[0], newori[1], y * 0.8, -x * 0.8, width = 0.01, head_width = 0.1, alpha = 0.5, color = 'red')
+
+    plt.scatter(moreori[0], moreori[1], color = 'blue', s= 10)
+    plt.arrow(moreori[0], moreori[1], 0, 1, width = 0.01, head_width = 0.1, alpha = 0.3)
+    plt.text(moreori[0], moreori[1] + 1.2, 'Z |0>', fontsize = 15)
+    plt.arrow(moreori[0], moreori[1], 0, -1, width = 0.01, head_width = 0.1, alpha = 0.3)
+    plt.text(moreori[0], moreori[1] - 1.2, '|1>', fontsize = 15)
+    
+    plt.arrow(moreori[0], moreori[1], 1, 0, width = 0.01, head_width = 0.1, alpha = 0.3)
+    plt.text(moreori[0] + 1.15, moreori[1], 'Y', fontsize = 15)
+    plt.text(moreori[0] - 0.1, moreori[1], 'X', fontsize = 15)
+    plt.scatter([y + moreori[0]], [z + moreori[1]], s = 200, color = 'red', alpha = 0.7)
+    plt.arrow(moreori[0], moreori[1], y * 0.8, z * 0.8, width = 0.01, head_width = 0.1, alpha = 0.5, color = 'red')
+
+    plt.title(f'θ = {(theta/(2 * pi)) * 360}° φ = {(phi/(2 * pi)) * 360}°')
+    plt.show()
