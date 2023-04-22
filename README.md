@@ -116,7 +116,7 @@ Add additional notes about how to deploy this on a live system.
 - [NodeJs](https://nodejs.org/en/) - Server Environment -->
 
 ## Authors <a name = "authors"></a>
-- [@stealthypanda](https://github.com/stealthypanda)
+- [@stealthypanda](https://github.com/stealthypanda)🐼
 
 
 <!-- 
