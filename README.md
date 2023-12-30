@@ -8,8 +8,8 @@
 <div align="center">
 
   [![Status](https://img.shields.io/badge/status-active-success.svg)]() 
-  [![GitHub Issues](https://img.shields.io/github/issues/stealthypanda/quantumcomputingsim.svg)](https://img.shields.io/github/issues/stealthypanda/quantumcomputingsim.svg)
-  [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/stealthypanda/quantumcomputingsim.svg)](https://img.shields.io/github/issues-pr/stealthypanda/quantumcomputingsim.svg)
+  <!-- [![GitHub Issues](https://img.shields.io/github/issues/stealthypanda/quantumcomputingsim.svg)](https://img.shields.io/github/issues/stealthypanda/quantumcomputingsim.svg)
+  [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/stealthypanda/quantumcomputingsim.svg)](https://img.shields.io/github/issues-pr/stealthypanda/quantumcomputingsim.svg) -->
   [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
   ![GitHub release (latest by date)](https://img.shields.io/github/v/release/stealthypanda/quantumcomputingsim)
 
@@ -21,13 +21,13 @@
     <br> 
 </p>
 
-## Table of Contents
+<!-- ## Table of Contents
 - [Table of Contents](#table-of-contents)
 - [Getting Started ](#getting-started-)
   - [Prerequisites](#prerequisites)
   - [Installing](#installing)
 - [Usage ](#usage-)
-- [Authors ](#authors-)
+- [Authors ](#authors-) -->
 
 <!-- ## About <a name = "about"></a>
 A python library to simulate quantum computing on classical computers. -->
@@ -116,7 +116,8 @@ Add additional notes about how to deploy this on a live system.
 - [NodeJs](https://nodejs.org/en/) - Server Environment -->
 
 ## Authors <a name = "authors"></a>
-- [@stealthypanda](https://github.com/stealthypanda)
+[![Foo](https://img.shields.io/badge/Made_with_❤️_by-@stealthypanda🐼-orange?style=for-the-badge&logo=python&link=)](https://sites.google.com/iitj.ac.in/stealthypanda/home)
+
 
 
 <!-- 
